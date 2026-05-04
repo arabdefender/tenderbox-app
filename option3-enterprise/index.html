@@ -1,0 +1,2988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tenderbox — Enterprise</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* ─── Procore-inspired enterprise palette ─── */
+      --brand: #0F2D5E;          /* Tenderbox navy — kept for brand */
+      --brand-deep: #081B3D;
+      --brand-mid: #1B3B6F;
+      --accent: #2563EB;         /* primary action blue */
+      --accent-hover: #1D4ED8;
+
+      --bg: #F1F4F8;             /* page background — slightly cool */
+      --surface: #FFFFFF;
+      --surface-alt: #F8FAFB;    /* zebra rows */
+      --hover: #F1F4F8;
+
+      --ink: #0F172A;
+      --ink-2: #1E293B;
+      --ink-3: #334155;
+      --ink-4: #475569;
+      --muted: #64748B;
+      --muted-2: #94A3B8;
+      --line: #E2E8F0;
+      --line-2: #CBD5E1;
+
+      --green: #15803D;
+      --green-bg: #DCFCE7;
+      --amber: #B45309;
+      --amber-bg: #FEF3C7;
+      --red: #B91C1C;
+      --red-bg: #FEE2E2;
+      --indigo: #4338CA;
+      --indigo-bg: #E0E7FF;
+
+      --top-h: 52px;
+      --tool-w: 220px;
+    }
+
+    html, body, #root {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: -0.005em;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    input, select, textarea { font-family: inherit; font-size: 13px; }
+
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 5px; border: 2px solid var(--bg); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted-2); }
+
+    .num { font-family: 'JetBrains Mono', 'SF Mono', monospace; font-feature-settings: 'tnum'; letter-spacing: -0.01em; }
+    .mono { font-family: 'JetBrains Mono', monospace; font-feature-settings: 'tnum'; }
+
+    /* Loading */
+    .loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .loading-mark { font-size: 16px; font-weight: 600; color: var(--brand); letter-spacing: -0.01em; }
+    @keyframes pulse { 0%,100% { opacity: 0.6; } 50% { opacity: 1; } }
+    .loading-dot { animation: pulse 1.2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+/* ──────────────────────────────────────────────────────────────────
+   DEMO DATA — same as live demo for parity
+   ────────────────────────────────────────────────────────────────── */
+
+const TENDERS = [
+  {
+    id: 'T-2026-001', name: 'Marina Views', sub: 'Main Construction Works',
+    location: 'Dubai Marina', status: 'analysis',
+    contractors: 4, bidsIn: 4,
+    issued: '10 Mar 2026', deadline: '12 Mar 2026, 17:00', opened: '13 Mar 2026, 09:00',
+    budget: 19000000, packageType: 'Single', currency: 'AED',
+    pm: 'Graham Stevens', client: 'Bluewaters Holdings',
+  },
+  {
+    id: 'T-2026-002', name: 'Downtown Office Tower', sub: 'MEP Package',
+    location: 'Downtown Dubai', status: 'submissions',
+    contractors: 3, bidsIn: 1,
+    issued: '20 Feb 2026', deadline: '15 Mar 2026, 17:00',
+    budget: 4800000, packageType: 'Single', currency: 'AED',
+    pm: 'Graham Stevens', client: 'Bluewaters Holdings',
+  },
+  {
+    id: 'T-2026-003', name: 'Al Barsha Residences', sub: 'Interior Fit-out',
+    location: 'Al Barsha', status: 'draft',
+    contractors: 5, bidsIn: 0,
+    issued: null, deadline: null,
+    budget: 2100000, packageType: 'Multiple', currency: 'AED',
+    pm: 'Graham Stevens', client: 'Bluewaters Holdings',
+  },
+];
+
+const CONTRACTORS = [
+  { id: 1, name: 'Al Futtaim Engineering',     short: 'Al Futtaim',  grade: 'A', region: 'Dubai',           classification: 'Main Contractor, Civil',     activeTenders: 3, awarded: 47200000, winRate: 38, contact: 'Mohammed Al Rashidi',  email: 'm.rashidi@alfuttaim.ae',  phone: '+971 4 555 0101', status: 'approved' },
+  { id: 2, name: 'Arabtec Build Co.',          short: 'Arabtec',     grade: 'A', region: 'Dubai / Abu Dhabi',classification: 'Main Contractor',            activeTenders: 2, awarded: 32100000, winRate: 24, contact: 'Sarah Johnson',         email: 's.johnson@arabtec.ae',    phone: '+971 4 555 0202', status: 'approved' },
+  { id: 3, name: 'Drake & Scull International',short: 'Drake & Scull', grade: 'B', region: 'UAE',           classification: 'MEP, Main Contractor',       activeTenders: 4, awarded: 28400000, winRate: 31, contact: 'Khalid Ibrahim',        email: 'k.ibrahim@drakeandscull.com', phone: '+971 4 555 0303', status: 'approved' },
+  { id: 4, name: 'ALEC Engineering',           short: 'ALEC',        grade: 'A', region: 'Dubai',           classification: 'Main Contractor, Fit-out',   activeTenders: 1, awarded: 19800000, winRate: 22, contact: 'James McAlister',       email: 'j.mcalister@alec.ae',     phone: '+971 4 555 0404', status: 'approved' },
+  { id: 5, name: 'Commodore Contracting',      short: 'Commodore',   grade: 'B', region: 'Abu Dhabi',       classification: 'Civil, Structural',          activeTenders: 2, awarded: 11200000, winRate: 18, contact: 'Ali Hassan',            email: 'a.hassan@commodore.ae',   phone: '+971 2 555 0505', status: 'approved' },
+  { id: 6, name: 'Gulf Contracting Co.',       short: 'Gulf',        grade: 'C', region: 'Dubai',           classification: 'MEP',                        activeTenders: 0, awarded: 0,        winRate: 0,  contact: 'Rashed Al Mansoori',    email: 'r.mansoori@gcc.ae',       phone: '+971 4 555 0606', status: 'pending' },
+];
+
+const BIDDING = [
+  { id: 1, name: 'Al Futtaim Engineering', short: 'Al Futtaim',     submitted: '13 Mar 08:47', sealed: 'TB-001-4-7F2A' },
+  { id: 2, name: 'Arabtec Build Co.',      short: 'Arabtec',        submitted: '13 Mar 07:22', sealed: 'TB-001-3-3D81' },
+  { id: 3, name: 'Drake & Scull',          short: 'Drake & Scull',  submitted: '12 Mar 17:55', sealed: 'TB-001-2-9C04' },
+  { id: 4, name: 'ALEC Engineering',       short: 'ALEC',           submitted: '12 Mar 14:30', sealed: 'TB-001-1-A1F7' },
+];
+
+/* Per-tender invitation lists. Each lists the contractors invited to that
+   tender, their submission state, and timestamps. Marina is everyone
+   submitted; Downtown has 1 of 3; Al Barsha is draft (no invitations). */
+const TENDER_INVITATIONS = {
+  'T-2026-001': [
+    { contractorId: 1, sentAt: '10 Mar 11:20', viewedAt: '10 Mar 14:32', submitted: '13 Mar 08:47', sealedRef: 'TB-001-4-7F2A', status: 'submitted' },
+    { contractorId: 2, sentAt: '10 Mar 11:20', viewedAt: '10 Mar 12:08', submitted: '13 Mar 07:22', sealedRef: 'TB-001-3-3D81', status: 'submitted' },
+    { contractorId: 3, sentAt: '10 Mar 11:20', viewedAt: '10 Mar 16:45', submitted: '12 Mar 17:55', sealedRef: 'TB-001-2-9C04', status: 'submitted' },
+    { contractorId: 4, sentAt: '10 Mar 11:20', viewedAt: '10 Mar 13:11', submitted: '12 Mar 14:30', sealedRef: 'TB-001-1-A1F7', status: 'submitted' },
+  ],
+  'T-2026-002': [
+    { contractorId: 3, sentAt: '20 Feb 09:14', viewedAt: '20 Feb 11:30', submitted: '11 Mar 16:22', sealedRef: 'TB-002-1-B4E9', status: 'submitted' },
+    { contractorId: 4, sentAt: '20 Feb 09:14', viewedAt: '21 Feb 08:12', submitted: null,            sealedRef: null,           status: 'pending'   },
+    { contractorId: 6, sentAt: '20 Feb 09:14', viewedAt: null,           submitted: null,            sealedRef: null,           status: 'not-viewed'},
+  ],
+  'T-2026-003': [],  // Draft — no invitations sent yet
+};
+
+/* Per-tender activity feed */
+const TENDER_ACTIVITY = {
+  'T-2026-001': [
+    { t: '13 Mar 09:18', u: 'System',          a: 'AI analysis completed', hash: 'a8f2c91d' },
+    { t: '13 Mar 09:00', u: 'R. Al Hajji',     a: 'Approved opening (2/2)', hash: '7e3b4f02' },
+    { t: '13 Mar 08:58', u: 'Graham Stevens',  a: 'Approved opening (1/2)', hash: '5c1d2e91' },
+    { t: '13 Mar 08:47', u: 'Al Futtaim',      a: 'Sealed bid received',    hash: '3f9a8c47' },
+    { t: '13 Mar 07:22', u: 'Arabtec',         a: 'Sealed bid received',    hash: '2b6d1f30' },
+    { t: '12 Mar 17:55', u: 'Drake & Scull',   a: 'Sealed bid received',    hash: 'e4c7a2b9' },
+    { t: '12 Mar 14:30', u: 'ALEC',            a: 'Sealed bid received',    hash: 'd1f3b805' },
+    { t: '10 Mar 11:20', u: 'Graham Stevens',  a: 'Invitations sent · 4 contractors', hash: '9a8c5f12' },
+    { t: '10 Mar 11:18', u: 'Graham Stevens',  a: 'Tender created',         hash: '4e7b2a83' },
+  ],
+  'T-2026-002': [
+    { t: '11 Mar 16:22', u: 'Drake & Scull',   a: 'Sealed bid received',    hash: 'c8a4f2b1' },
+    { t: '03 Mar 14:08', u: 'Graham Stevens',  a: 'Reminder sent · 2 contractors', hash: '5d1e9034' },
+    { t: '21 Feb 08:12', u: 'ALEC',            a: 'Invitation viewed',      hash: 'b2f5c81e' },
+    { t: '20 Feb 11:30', u: 'Drake & Scull',   a: 'Invitation viewed',      hash: 'a14e8d27' },
+    { t: '20 Feb 09:14', u: 'Graham Stevens',  a: 'Invitations sent · 3 contractors', hash: '7c3a5f80' },
+    { t: '20 Feb 09:10', u: 'Graham Stevens',  a: 'Tender published',       hash: '4f2b1c93' },
+    { t: '19 Feb 16:45', u: 'Graham Stevens',  a: 'Tender created',         hash: '3a8e6d52' },
+  ],
+  'T-2026-003': [
+    { t: '02 May 14:22', u: 'Graham Stevens',  a: 'Tender created · Draft', hash: '8f4a2e91' },
+  ],
+};
+
+/* Per-tender risks (only Marina has flagged risks at this point) */
+const TENDER_RISKS = {
+  'T-2026-001': [
+    { sev: 'High',   title: 'Missing rate — Lifts & Escalators (07.001)', detail: 'Arabtec submitted no rate for item 07.001 (8 lift units). Exposure AED 1.8M+. Clarification required before award recommendation.', impact: 'AED 1,800,000', recommendation: 'Request immediate clarification from Arabtec or treat bid as non-compliant.' },
+    { sev: 'Medium', title: 'HVAC rate outlier — ALEC (04.001)',          detail: 'ALEC HVAC rate of AED 2.4M sits 14% above median. Investigate scope difference or pricing assumption.',                                impact: '14% above median',  recommendation: 'Review ALEC scope assumptions in negotiation schedule.' },
+    { sev: 'Medium', title: 'Spread on RC Columns — 14% (02.002)',         detail: 'Rate spread for item 02.002 exceeds the 10% threshold. Verify specification assumptions are consistent across all bids.',          impact: 'AED 155,000 spread', recommendation: 'Issue clarification to confirm specification assumptions.' },
+  ],
+  'T-2026-002': [],
+  'T-2026-003': [],
+};
+
+const getContractor = (id) => CONTRACTORS.find(c => c.id === id);
+
+
+const BOQ = [
+  { code: '01.001', desc: 'Excavation & Earthworks',          unit: 'm³',  qty: 4200, rates: [38, 42, 44, 39] },
+  { code: '02.001', desc: 'RC Foundations & Raft Slab',       unit: 'm²',  qty: 1800, rates: [285, 290, 310, 288] },
+  { code: '02.002', desc: 'RC Columns & Shear Walls',         unit: 'm³',  qty: 620,  rates: [1850, 1920, 2100, 1870] },
+  { code: '02.003', desc: 'RC Beams & Slabs',                 unit: 'm³',  qty: 980,  rates: [1650, 1700, 1820, 1675] },
+  { code: '03.001', desc: 'External Block & Plaster',         unit: 'm²',  qty: 3200, rates: [82, 88, 95, 84] },
+  { code: '03.002', desc: 'Internal Plaster & Skim',          unit: 'm²',  qty: 8600, rates: [45, 48, 52, 46] },
+  { code: '04.001', desc: 'Chilled Water System (HVAC)',      unit: 'sum', qty: 1,    rates: [2100000, 2250000, 2400000, 2180000] },
+  { code: '04.002', desc: 'Electrical HV/LV Works',           unit: 'sum', qty: 1,    rates: [1450000, 1520000, 1380000, 1490000] },
+  { code: '04.003', desc: 'Plumbing & Drainage',              unit: 'sum', qty: 1,    rates: [680000, 720000, 760000, 695000] },
+  { code: '05.001', desc: 'Porcelain Floor Tiling',           unit: 'm²',  qty: 2800, rates: [125, 130, 145, 128] },
+  { code: '05.002', desc: 'Marble Flooring (Lobby)',          unit: 'm²',  qty: 340,  rates: [380, 395, 420, 385] },
+  { code: '05.003', desc: 'Painted Gypsum Ceiling',           unit: 'm²',  qty: 5200, rates: [68, 72, 78, 70] },
+  { code: '06.001', desc: 'Aluminium Curtain Wall & Glazing', unit: 'm²',  qty: 1200, rates: [680, 720, 780, 695] },
+  { code: '06.002', desc: 'Entrance Feature Canopy',          unit: 'sum', qty: 1,    rates: [185000, 195000, 175000, 190000] },
+  { code: '07.001', desc: 'Lifts & Escalators (8 units)',     unit: 'sum', qty: 1,    rates: [1800000, 0, 1950000, 1850000] },
+  { code: '08.001', desc: 'Landscaping & External Works',     unit: 'sum', qty: 1,    rates: [420000, 445000, 480000, 435000] },
+  { code: '09.001', desc: 'Preliminaries & Site Overhead',    unit: 'sum', qty: 1,    rates: [980000, 1020000, 1100000, 1000000] },
+  { code: '10.001', desc: "Contractor's Risk & Profit",       unit: '%',   qty: 1,    rates: [850000, 910000, 780000, 840000] },
+];
+
+const TOTALS = [0, 1, 2, 3].map(i => BOQ.reduce((s, x) => s + x.qty * x.rates[i], 0));
+const BUDGET = 19000000;
+
+const fmt = (n) => n === 0 ? '—' : Number(n).toLocaleString('en-GB');
+const fmtAED = (n) => n === 0 ? '—' : 'AED ' + Number(n).toLocaleString('en-GB');
+const fmtShortAED = (n) => n === 0 ? '—' : 'AED ' + (n / 1000000).toFixed(2) + 'M';
+const fmtShort = (n) => n === 0 ? '—' : (n / 1000000).toFixed(2) + 'M';
+
+/* ──────────────────────────────────────────────────────────────────
+   ATOMIC COMPONENTS
+   ────────────────────────────────────────────────────────────────── */
+
+function Pill({ children, tone = 'neutral', size = 'md' }) {
+  const tones = {
+    neutral: { fg: 'var(--ink-3)', bg: 'var(--bg)',       bd: 'var(--line-2)' },
+    success: { fg: 'var(--green)', bg: 'var(--green-bg)', bd: 'transparent' },
+    warning: { fg: 'var(--amber)', bg: 'var(--amber-bg)', bd: 'transparent' },
+    danger:  { fg: 'var(--red)',   bg: 'var(--red-bg)',   bd: 'transparent' },
+    info:    { fg: 'var(--indigo)',bg: 'var(--indigo-bg)',bd: 'transparent' },
+    blue:    { fg: 'var(--accent)',bg: '#DBEAFE',         bd: 'transparent' },
+  };
+  const t = tones[tone] || tones.neutral;
+  const sz = size === 'sm'
+    ? { fz: 10.5, py: 1, px: 7 }
+    : { fz: 11, py: 2, px: 8 };
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: 5,
+      padding: `${sz.py}px ${sz.px}px`,
+      borderRadius: 4,
+      fontSize: sz.fz,
+      fontWeight: 600,
+      letterSpacing: '0.02em',
+      textTransform: 'uppercase',
+      color: t.fg, background: t.bg,
+      border: `1px solid ${t.bd}`,
+      whiteSpace: 'nowrap',
+      lineHeight: 1.4,
+      fontFamily: 'inherit',
+    }}>{children}</span>
+  );
+}
+
+function Btn({ children, variant = 'primary', size = 'md', onClick, style = {}, disabled, icon }) {
+  const sizes = {
+    sm: { fz: 12, py: 5, px: 10, h: 26 },
+    md: { fz: 13, py: 6, px: 14, h: 32 },
+    lg: { fz: 14, py: 9, px: 18, h: 38 },
+  }[size];
+  const variants = {
+    primary: { bg: 'var(--accent)', fg: '#fff',         bd: 'transparent', hover: 'var(--accent-hover)' },
+    secondary:{ bg: 'var(--surface)',fg: 'var(--ink)',  bd: 'var(--line-2)', hover: 'var(--bg)' },
+    ghost:   { bg: 'transparent',   fg: 'var(--ink-3)',bd: 'transparent', hover: 'var(--bg)' },
+    danger:  { bg: 'var(--surface)',fg: 'var(--red)',  bd: 'var(--line-2)', hover: 'var(--red-bg)' },
+    brand:   { bg: 'var(--brand)', fg: '#fff',          bd: 'transparent', hover: 'var(--brand-mid)' },
+  };
+  const v = variants[variant];
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+      height: sizes.h,
+      padding: `0 ${sizes.px}px`,
+      borderRadius: 6,
+      fontSize: sizes.fz,
+      fontWeight: 500,
+      letterSpacing: '-0.005em',
+      color: v.fg, background: v.bg,
+      border: `1px solid ${v.bd === 'transparent' ? v.bg : v.bd}`,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.5 : 1,
+      transition: 'all 0.12s',
+      fontFamily: 'inherit',
+      ...style,
+    }}
+      onMouseEnter={e => { if (!disabled) e.currentTarget.style.background = v.hover; }}
+      onMouseLeave={e => { if (!disabled) e.currentTarget.style.background = v.bg; }}>
+      {icon && <span style={{ fontSize: sizes.fz + 1 }}>{icon}</span>}
+      {children}
+    </button>
+  );
+}
+
+function StatusPill({ status }) {
+  const m = {
+    analysis:    { tone: 'success', label: 'Analysis Ready' },
+    submissions: { tone: 'blue',    label: 'Submissions Open' },
+    draft:       { tone: 'neutral', label: 'Draft' },
+    sealed:      { tone: 'info',    label: 'Sealed' },
+    awarded:     { tone: 'success', label: 'Awarded' },
+    archived:    { tone: 'neutral', label: 'Archived' },
+  };
+  const s = m[status] || m.draft;
+  return <Pill tone={s.tone}>{s.label}</Pill>;
+}
+
+function MetricCard({ label, value, sub, trend, tone }) {
+  return (
+    <div style={{
+      background: 'var(--surface)',
+      border: '1px solid var(--line)',
+      borderRadius: 6,
+      padding: '14px 16px',
+      flex: 1,
+      minWidth: 0,
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>
+        {label}
+      </div>
+      <div className="num" style={{ fontSize: 22, fontWeight: 600, color: tone || 'var(--ink)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+        {value}
+      </div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   TOP NAV — global enterprise header
+   ────────────────────────────────────────────────────────────────── */
+
+function TopNav({ role, onSignOut, project, onProjectSwitch }) {
+  const workspace = role === 'contractor' ? { name: 'Al Futtaim Engineering', initials: 'AF' }
+                  : role === 'committee'  ? { name: 'Bluewaters Holdings · Committee', initials: 'BH' }
+                  : role === 'auditor'    ? { name: 'External Auditor', initials: 'EA' }
+                  :                          { name: 'Bluewaters Holdings', initials: 'BH' };
+  return (
+    <header style={{
+      height: 'var(--top-h)',
+      background: 'var(--brand)',
+      borderBottom: '1px solid var(--brand-deep)',
+      display: 'flex',
+      alignItems: 'center',
+      paddingLeft: 16, paddingRight: 16,
+      color: '#fff',
+      flexShrink: 0,
+    }}>
+      {/* Brand */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginRight: 24 }}>
+        <div style={{
+          width: 22, height: 22, borderRadius: 4,
+          background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontWeight: 700, fontSize: 13, letterSpacing: '-0.02em',
+        }}>T</div>
+        <div style={{ fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>Tenderbox</div>
+      </div>
+
+      {/* Workspace selector */}
+      <button style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '6px 10px', borderRadius: 4,
+        background: 'rgba(255,255,255,0.06)',
+        color: '#fff', fontSize: 12, fontWeight: 500,
+        marginRight: 'auto',
+        cursor: 'pointer',
+        transition: 'background 0.12s',
+      }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}>
+        <span style={{ width: 14, height: 14, borderRadius: 2, background: '#fff', color: 'var(--brand)', fontSize: 9, fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{workspace.initials}</span>
+        {workspace.name}
+        <span style={{ fontSize: 9, opacity: 0.7 }}>▼</span>
+      </button>
+
+      {/* Search */}
+      <div style={{ position: 'relative', width: 320, marginRight: 16 }}>
+        <input
+          placeholder="Search tenders, contractors, BOQ items…"
+          style={{
+            width: '100%',
+            height: 30,
+            padding: '0 10px 0 30px',
+            borderRadius: 4,
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#fff',
+            fontSize: 12,
+            outline: 'none',
+          }}
+        />
+        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>⌕</span>
+        <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: 'rgba(255,255,255,0.4)', padding: '2px 5px', borderRadius: 3, background: 'rgba(255,255,255,0.1)' }}>⌘K</span>
+      </div>
+
+      {/* Notifications */}
+      <button style={{
+        width: 30, height: 30, borderRadius: 4,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', fontSize: 14, marginRight: 8,
+        position: 'relative',
+        transition: 'background 0.12s',
+      }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+        ⌗
+        <span style={{ position: 'absolute', top: 4, right: 5, width: 6, height: 6, borderRadius: 3, background: 'var(--accent)' }} />
+      </button>
+
+      {/* User */}
+      <button onClick={onSignOut} style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '4px 10px 4px 4px', borderRadius: 4,
+        color: '#fff', fontSize: 12,
+        cursor: 'pointer',
+        transition: 'background 0.12s',
+      }}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+        <span style={{
+          width: 24, height: 24, borderRadius: 12,
+          background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 600,
+        }}>{role === 'admin' ? 'GS' : role === 'contractor' ? 'AF' : role === 'committee' ? 'RH' : 'AU'}</span>
+        <span style={{ fontWeight: 500 }}>
+          {role === 'admin' ? 'Graham Stevens' : role === 'contractor' ? 'Al Futtaim' : role === 'committee' ? 'R. Al Hajji' : 'Auditor'}
+        </span>
+      </button>
+    </header>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   TOOL NAV — left vertical tool list (Procore-style)
+   ────────────────────────────────────────────────────────────────── */
+
+function ToolNav({ active, onChange, role }) {
+  const sections = role === 'admin' ? [
+    { group: 'Workspace', items: [
+      { k: 'dashboard',   label: 'Dashboard',     icon: '▦' },
+      { k: 'tenders',     label: 'Tenders',       icon: '▤', count: 3 },
+      { k: 'contractors', label: 'Contractors',   icon: '◫', count: 6 },
+    ]},
+    { group: 'Tools', items: [
+      { k: 'analysis',    label: 'Analysis',      icon: '⌿' },
+      { k: 'reports',     label: 'Reports',       icon: '◰' },
+      { k: 'audit',       label: 'Audit Log',     icon: '⌗' },
+    ]},
+    { group: 'Admin', items: [
+      { k: 'team',        label: 'Team & Roles',  icon: '◔' },
+      { k: 'settings',    label: 'Settings',      icon: '◐' },
+    ]},
+  ] : role === 'contractor' ? [
+    { group: 'Workspace', items: [
+      { k: 'dashboard',   label: 'Dashboard',      icon: '▦' },
+      { k: 'invitations', label: 'Invitations',    icon: '▤', count: 1 },
+      { k: 'submissions', label: 'My Submissions', icon: '◫', count: 1 },
+      { k: 'awards',      label: 'Awards',         icon: '✓', count: 1 },
+    ]},
+  ] : role === 'committee' ? [
+    { group: 'Workspace', items: [
+      { k: 'pending',     label: 'Pending',       icon: '◯', count: 1 },
+      { k: 'history',     label: 'History',       icon: '⌗', count: 3 },
+    ]},
+  ] : [
+    { group: 'Workspace', items: [
+      { k: 'tenders',     label: 'All Tenders',   icon: '▤', count: 3 },
+      { k: 'audit',       label: 'Audit Log',     icon: '⌗' },
+      { k: 'verifications', label: 'Verifications', icon: '✓' },
+    ]},
+  ];
+
+  return (
+    <aside style={{
+      width: 'var(--tool-w)',
+      flexShrink: 0,
+      background: 'var(--surface)',
+      borderRight: '1px solid var(--line)',
+      overflowY: 'auto',
+      paddingTop: 12, paddingBottom: 12,
+    }}>
+      {sections.map((section, si) => (
+        <div key={si} style={{ marginBottom: 8 }}>
+          <div style={{
+            padding: '8px 16px 6px',
+            fontSize: 10,
+            fontWeight: 600,
+            color: 'var(--muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.06em',
+          }}>{section.group}</div>
+          {section.items.map(item => {
+            const isActive = active === item.k;
+            return (
+              <button
+                key={item.k}
+                onClick={() => onChange(item.k)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  width: '100%',
+                  padding: '7px 16px 7px 14px',
+                  borderLeft: isActive ? '2px solid var(--accent)' : '2px solid transparent',
+                  background: isActive ? '#EBF2FF' : 'transparent',
+                  color: isActive ? 'var(--accent)' : 'var(--ink-3)',
+                  fontSize: 13,
+                  fontWeight: isActive ? 600 : 500,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  letterSpacing: '-0.005em',
+                  transition: 'all 0.1s',
+                }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg)'; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                <span style={{ fontSize: 14, opacity: 0.85, width: 14, textAlign: 'center' }}>{item.icon}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {item.count !== undefined && (
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: isActive ? 'var(--accent)' : 'var(--muted)',
+                    background: isActive ? '#DBEAFE' : 'var(--bg)',
+                    padding: '1px 6px',
+                    borderRadius: 8,
+                    minWidth: 18,
+                    textAlign: 'center',
+                  }}>{item.count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ))}
+    </aside>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   PAGE HEADER — page-level title & action bar (Procore pattern)
+   ────────────────────────────────────────────────────────────────── */
+
+function PageHeader({ breadcrumb, title, subtitle, actions, tabs, activeTab, onTab }) {
+  return (
+    <div style={{
+      background: 'var(--surface)',
+      borderBottom: '1px solid var(--line)',
+      padding: '14px 24px 0',
+      flexShrink: 0,
+    }}>
+      {breadcrumb && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>
+          {breadcrumb.map((b, i) => (
+            <React.Fragment key={i}>
+              {i > 0 && <span style={{ color: 'var(--muted-2)' }}>/</span>}
+              <span style={{ color: i === breadcrumb.length - 1 ? 'var(--ink-3)' : 'var(--muted)', fontWeight: i === breadcrumb.length - 1 ? 500 : 400 }}>{b}</span>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, paddingBottom: tabs ? 10 : 16 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <h1 style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink)', letterSpacing: '-0.015em', lineHeight: 1.2 }}>{title}</h1>
+          {subtitle && <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>{subtitle}</div>}
+        </div>
+        {actions && <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>{actions}</div>}
+      </div>
+      {tabs && (
+        <div style={{ display: 'flex', gap: 0, marginTop: 4 }}>
+          {tabs.map(t => (
+            <button key={t.k} onClick={() => onTab(t.k)} style={{
+              padding: '10px 14px',
+              fontSize: 13,
+              fontWeight: 500,
+              color: activeTab === t.k ? 'var(--accent)' : 'var(--ink-3)',
+              borderBottom: activeTab === t.k ? '2px solid var(--accent)' : '2px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 0.12s',
+              marginBottom: -1,
+              letterSpacing: '-0.005em',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}>
+              {t.label}
+              {t.count !== undefined && (
+                <span style={{
+                  fontSize: 10, fontWeight: 600,
+                  padding: '1px 5px', borderRadius: 8,
+                  background: activeTab === t.k ? '#DBEAFE' : 'var(--bg)',
+                  color: activeTab === t.k ? 'var(--accent)' : 'var(--muted)',
+                  minWidth: 16, textAlign: 'center',
+                }}>{t.count}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   ROLE PICKER — utilitarian, looks like an enterprise login
+   ────────────────────────────────────────────────────────────────── */
+
+function RoleScreen({ onPick }) {
+  const roles = [
+    { id: 'admin',     label: 'Developer / QS',      sub: 'Manage tenders, contractors, awards', desc: 'Full administrative access to your organisation\u2019s tenders.' },
+    { id: 'contractor', label: 'Contractor',         sub: 'Receive invitations, submit bids',     desc: 'View invitations and submit sealed bids on tenders you\u2019re invited to.' },
+    { id: 'committee',  label: 'Opening Committee',  sub: 'Witness and approve openings',         desc: 'Participate in the controlled opening of sealed bids.' },
+    { id: 'auditor',    label: 'Auditor',            sub: 'Read-only access for compliance',      desc: 'Full read-only access to records and the immutable audit trail.' },
+  ];
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 24 }}>
+      <div style={{ width: 460, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 8, padding: '28px 28px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 5, background: 'var(--brand)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14 }}>T</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', letterSpacing: '-0.01em' }}>Tenderbox</div>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>Construction tendering platform</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Sign in</div>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 16 }}>Select your role to continue.</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {roles.map(r => (
+            <button key={r.id} onClick={() => onPick(r.id)} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              padding: '12px 14px',
+              border: '1px solid var(--line)',
+              borderRadius: 6,
+              background: 'var(--surface)',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.12s',
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = '#F8FAFF'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.background = 'var(--surface)'; }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>{r.label}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{r.sub}</div>
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--muted-2)', marginTop: 2 }}>→</span>
+            </button>
+          ))}
+        </div>
+        <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)', fontSize: 11, color: 'var(--muted)', display: 'flex', justifyContent: 'space-between' }}>
+          <span>Demo environment</span>
+          <span className="mono">tenderbox.ae</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   DASHBOARD — workspace home for admin
+   ────────────────────────────────────────────────────────────────── */
+
+function Dashboard({ onTender, onTool }) {
+  const livePending = TENDERS.filter(t => t.status !== 'draft');
+  const totalInFlight = TENDERS.reduce((s, t) => s + t.budget, 0);
+  const totalBids = TENDERS.reduce((s, t) => s + t.bidsIn, 0);
+
+  return (
+    <div>
+      <PageHeader
+        breadcrumb={['Bluewaters Holdings', 'Dashboard']}
+        title="Dashboard"
+        subtitle="Overview of all live tenders, contractor activity, and items needing your attention."
+        actions={<>
+          <Btn variant="secondary" size="md" icon="↓">Export</Btn>
+          <Btn variant="primary" size="md" icon="+" onClick={() => onTool('newTender')}>New Tender</Btn>
+        </>}
+      />
+
+      <div style={{ padding: 24, overflowY: 'auto' }}>
+
+        {/* Metrics row */}
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+          <MetricCard label="Live Tenders" value={livePending.length} sub={`${TENDERS.length - livePending.length} draft`} />
+          <MetricCard label="Bids Received" value={totalBids} sub="Across all tenders" tone="var(--accent)" />
+          <MetricCard label="Total in Flight" value={`AED ${(totalInFlight / 1000000).toFixed(1)}M`} sub="Aggregate budget" />
+          <MetricCard label="Awards Pending" value="1" sub="Marina Views" tone="var(--amber)" />
+          <MetricCard label="Cycle Time (avg)" value="14d" sub="Issued → Award" />
+        </div>
+
+        {/* Two-column: Tenders + Activity */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+
+          {/* Active Tenders Table */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--line)' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>Active Tenders</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>{TENDERS.length} tenders · sorted by status</div>
+              </div>
+              <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }} onClick={() => onTool('tenders')}>View all →</button>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+                  <th style={th}>Project</th>
+                  <th style={{ ...th, textAlign: 'left', width: 110 }}>Tender ID</th>
+                  <th style={{ ...th, textAlign: 'right', width: 100 }}>Budget</th>
+                  <th style={{ ...th, textAlign: 'center', width: 70 }}>Bids</th>
+                  <th style={{ ...th, textAlign: 'left', width: 130 }}>Deadline</th>
+                  <th style={{ ...th, textAlign: 'left', width: 140 }}>Status</th>
+                  <th style={{ ...th, width: 28 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {TENDERS.map((t, i) => (
+                  <tr key={t.id} onClick={() => onTender(t)} style={{
+                    borderBottom: i < TENDERS.length - 1 ? '1px solid var(--line)' : 'none',
+                    cursor: 'pointer',
+                    transition: 'background 0.1s',
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <td style={td}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{t.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.sub} · {t.location}</div>
+                    </td>
+                    <td className="mono" style={{ ...td, color: 'var(--muted)', fontSize: 11 }}>{t.id}</td>
+                    <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 500 }}>{fmtShortAED(t.budget)}</td>
+                    <td className="num" style={{ ...td, textAlign: 'center', color: 'var(--ink-3)' }}>
+                      <span style={{ fontWeight: 600, color: t.bidsIn === t.contractors ? 'var(--green)' : 'var(--ink-3)' }}>{t.bidsIn}</span>
+                      <span style={{ color: 'var(--muted-2)' }}>/{t.contractors}</span>
+                    </td>
+                    <td style={{ ...td, color: 'var(--ink-3)', fontSize: 11 }}>{t.deadline || <span style={{ color: 'var(--muted-2)' }}>—</span>}</td>
+                    <td style={td}><StatusPill status={t.status} /></td>
+                    <td style={{ ...td, textAlign: 'right', color: 'var(--muted-2)' }}>›</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Activity feed */}
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>Activity</div>
+              <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }} onClick={() => onTool('audit')}>Audit log →</button>
+            </div>
+            <div style={{ padding: '4px 0' }}>
+              {[
+                { t: '13 Mar 09:18', u: 'System', a: 'AI analysis completed for Marina Views', tag: 'Marina Views' },
+                { t: '13 Mar 09:00', u: 'R. Al Hajji', a: 'Approved opening (2/2)', tag: 'Marina Views' },
+                { t: '13 Mar 08:58', u: 'Graham Stevens', a: 'Approved opening (1/2)', tag: 'Marina Views' },
+                { t: '13 Mar 08:47', u: 'Al Futtaim', a: 'Sealed bid received', tag: 'Marina Views' },
+                { t: '13 Mar 07:22', u: 'Arabtec', a: 'Sealed bid received', tag: 'Marina Views' },
+                { t: '12 Mar 17:55', u: 'Drake & Scull', a: 'Sealed bid received', tag: 'Marina Views' },
+                { t: '12 Mar 14:30', u: 'ALEC', a: 'Sealed bid received', tag: 'Marina Views' },
+                { t: '10 Mar 11:20', u: 'Graham Stevens', a: 'Invitations sent · 4 contractors', tag: 'Marina Views' },
+              ].map((e, i) => (
+                <div key={i} style={{ padding: '8px 16px', borderBottom: '1px solid var(--line)', fontSize: 12 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                    <span style={{ color: 'var(--ink)' }}>
+                      <span style={{ fontWeight: 500 }}>{e.u}</span> {e.a}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 3 }}>
+                    <span className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>{e.t}</span>
+                    <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 500 }}>{e.tag}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Action items */}
+        <div style={{ marginTop: 20, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6 }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>My Open Items</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>3 items requiring your attention</div>
+            </div>
+          </div>
+          <div>
+            {[
+              { sev: 'warning', tender: 'Marina Views', label: 'Award decision pending', detail: 'Recommendation: Al Futtaim at AED 13.35M. Three risk flags require clarification before sign-off.', action: 'Review' },
+              { sev: 'info',    tender: 'Downtown Office Tower', label: '2 of 3 bids outstanding', detail: 'Deadline 15 Mar 17:00 — three days remaining.', action: 'View' },
+              { sev: 'neutral', tender: 'Al Barsha Residences', label: 'Tender draft incomplete', detail: 'BOQ items, contractor list and timeline still unfinished.', action: 'Continue' },
+            ].map((it, i) => (
+              <div key={i} style={{
+                display: 'grid', gridTemplateColumns: '4px 1fr auto', gap: 14,
+                alignItems: 'center',
+                padding: '14px 16px',
+                borderBottom: i < 2 ? '1px solid var(--line)' : 'none',
+              }}>
+                <div style={{ width: 4, height: 36, borderRadius: 2, background: it.sev === 'warning' ? 'var(--amber)' : it.sev === 'info' ? 'var(--accent)' : 'var(--muted-2)' }} />
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{it.label}</span>
+                    <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>· {it.tender}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>{it.detail}</div>
+                </div>
+                <Btn variant="secondary" size="sm">{it.action} →</Btn>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const th = {
+  padding: '8px 12px',
+  fontSize: 10,
+  fontWeight: 600,
+  color: 'var(--muted)',
+  textAlign: 'left',
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  borderRight: 'none',
+  whiteSpace: 'nowrap',
+};
+
+const td = {
+  padding: '11px 12px',
+  fontSize: 12,
+  color: 'var(--ink-3)',
+  verticalAlign: 'middle',
+};
+
+/* ──────────────────────────────────────────────────────────────────
+   TENDERS LIST
+   ────────────────────────────────────────────────────────────────── */
+
+function TendersList({ onTender }) {
+  const [filter, setFilter] = useState('all');
+  const filtered = filter === 'all' ? TENDERS : TENDERS.filter(t => t.status === filter);
+
+  return (
+    <div>
+      <PageHeader
+        breadcrumb={['Bluewaters Holdings', 'Tenders']}
+        title="Tenders"
+        subtitle={`${TENDERS.length} total · 2 active · 1 draft`}
+        actions={<>
+          <Btn variant="secondary" size="md" icon="⌕">Filter</Btn>
+          <Btn variant="secondary" size="md" icon="↓">Export</Btn>
+          <Btn variant="primary" size="md" icon="+">New Tender</Btn>
+        </>}
+        tabs={[
+          { k: 'all', label: 'All', count: TENDERS.length },
+          { k: 'submissions', label: 'Open', count: 1 },
+          { k: 'analysis', label: 'Analysis', count: 1 },
+          { k: 'draft', label: 'Drafts', count: 1 },
+        ]}
+        activeTab={filter}
+        onTab={setFilter}
+      />
+
+      <div style={{ padding: 24, overflowY: 'auto' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, width: 28 }}><input type="checkbox" /></th>
+                <th style={th}>Project / Package</th>
+                <th style={{ ...th, width: 110 }}>Tender ID</th>
+                <th style={{ ...th, width: 130 }}>Client</th>
+                <th style={{ ...th, width: 110, textAlign: 'right' }}>Budget</th>
+                <th style={{ ...th, width: 80, textAlign: 'center' }}>Bids</th>
+                <th style={{ ...th, width: 110 }}>Issued</th>
+                <th style={{ ...th, width: 130 }}>Deadline</th>
+                <th style={{ ...th, width: 140 }}>Status</th>
+                <th style={{ ...th, width: 28 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((t, i) => (
+                <tr key={t.id} onClick={() => onTender(t)} style={{
+                  borderBottom: i < filtered.length - 1 ? '1px solid var(--line)' : 'none',
+                  cursor: 'pointer',
+                  background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'}
+                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)'}>
+                  <td style={td} onClick={e => e.stopPropagation()}><input type="checkbox" /></td>
+                  <td style={td}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{t.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.sub} · {t.location}</div>
+                  </td>
+                  <td className="mono" style={{ ...td, fontSize: 11 }}>{t.id}</td>
+                  <td style={td}>{t.client}</td>
+                  <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 500, color: 'var(--ink)' }}>{fmtShortAED(t.budget)}</td>
+                  <td className="num" style={{ ...td, textAlign: 'center' }}>
+                    <span style={{ fontWeight: 600, color: t.bidsIn === t.contractors ? 'var(--green)' : 'var(--ink-3)' }}>{t.bidsIn}</span>
+                    <span style={{ color: 'var(--muted-2)' }}>/{t.contractors}</span>
+                  </td>
+                  <td style={{ ...td, fontSize: 11 }}>{t.issued || <span style={{ color: 'var(--muted-2)' }}>—</span>}</td>
+                  <td style={{ ...td, fontSize: 11 }}>{t.deadline || <span style={{ color: 'var(--muted-2)' }}>—</span>}</td>
+                  <td style={td}><StatusPill status={t.status} /></td>
+                  <td style={{ ...td, textAlign: 'right', color: 'var(--muted-2)' }}>›</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   CONTRACTORS LIST
+   ────────────────────────────────────────────────────────────────── */
+
+function ContractorsList() {
+  return (
+    <div>
+      <PageHeader
+        breadcrumb={['Bluewaters Holdings', 'Contractors']}
+        title="Contractor Database"
+        subtitle={`${CONTRACTORS.length} approved · 1 pending`}
+        actions={<>
+          <Btn variant="secondary" size="md" icon="⌕">Filter</Btn>
+          <Btn variant="secondary" size="md" icon="↓">Export</Btn>
+          <Btn variant="primary" size="md" icon="+">Add Contractor</Btn>
+        </>}
+      />
+
+      <div style={{ padding: 24, overflowY: 'auto' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, width: 28 }}><input type="checkbox" /></th>
+                <th style={th}>Company</th>
+                <th style={{ ...th, width: 80, textAlign: 'center' }}>Grade</th>
+                <th style={{ ...th, width: 200 }}>Classification</th>
+                <th style={{ ...th, width: 130 }}>Region</th>
+                <th style={{ ...th, width: 90, textAlign: 'center' }}>Active</th>
+                <th style={{ ...th, width: 130, textAlign: 'right' }}>Awarded</th>
+                <th style={{ ...th, width: 80, textAlign: 'right' }}>Win %</th>
+                <th style={{ ...th, width: 110 }}>Status</th>
+                <th style={{ ...th, width: 28 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {CONTRACTORS.map((c, i) => (
+                <tr key={c.id} style={{
+                  borderBottom: i < CONTRACTORS.length - 1 ? '1px solid var(--line)' : 'none',
+                  cursor: 'pointer',
+                  background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                  transition: 'background 0.1s',
+                }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'}
+                  onMouseLeave={e => e.currentTarget.style.background = i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)'}>
+                  <td style={td} onClick={e => e.stopPropagation()}><input type="checkbox" /></td>
+                  <td style={td}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{c.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.contact} · {c.email}</div>
+                  </td>
+                  <td style={{ ...td, textAlign: 'center' }}>
+                    <span className="mono" style={{
+                      display: 'inline-block',
+                      width: 22, height: 22,
+                      borderRadius: 4,
+                      background: c.grade === 'A' ? 'var(--green-bg)' : c.grade === 'B' ? '#FFF7ED' : 'var(--bg)',
+                      color: c.grade === 'A' ? 'var(--green)' : c.grade === 'B' ? 'var(--amber)' : 'var(--ink-3)',
+                      fontSize: 11, fontWeight: 700,
+                      lineHeight: '22px',
+                    }}>{c.grade}</span>
+                  </td>
+                  <td style={{ ...td, fontSize: 11 }}>{c.classification}</td>
+                  <td style={{ ...td, fontSize: 11 }}>{c.region}</td>
+                  <td className="num" style={{ ...td, textAlign: 'center', fontWeight: 500, color: 'var(--ink)' }}>{c.activeTenders}</td>
+                  <td className="num" style={{ ...td, textAlign: 'right' }}>{fmtShortAED(c.awarded)}</td>
+                  <td className="num" style={{ ...td, textAlign: 'right', color: 'var(--ink-3)' }}>{c.winRate ? c.winRate + '%' : '—'}</td>
+                  <td style={td}><Pill tone={c.status === 'approved' ? 'success' : 'warning'}>{c.status}</Pill></td>
+                  <td style={{ ...td, textAlign: 'right', color: 'var(--muted-2)' }}>›</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   TENDER DETAIL — three-column with tools sidebar, content, side panel
+   ────────────────────────────────────────────────────────────────── */
+
+function TenderDetail({ tender, onBack, readOnly }) {
+  const [tab, setTab] = useState('overview');
+  const isMarina = tender.id === 'T-2026-001';
+  const riskCount = (TENDER_RISKS[tender.id] || []).length;
+  const docCount = isMarina ? 8 : tender.id === 'T-2026-002' ? 4 : 0;
+
+  const invitedCount = (TENDER_INVITATIONS[tender.id] || []).length;
+  const tabs = [
+    { k: 'overview', label: 'Overview' },
+    { k: 'invitations', label: 'Invitations', count: invitedCount },
+    { k: 'submissions', label: 'Submissions', count: tender.bidsIn },
+    { k: 'analysis', label: 'Analysis' },
+    { k: 'risks', label: 'Risks', count: riskCount },
+    { k: 'documents', label: 'Documents', count: docCount },
+    { k: 'audit', label: 'Audit' },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <PageHeader
+        breadcrumb={readOnly ? ['Auditor view', 'Tenders', tender.name] : ['Bluewaters Holdings', 'Tenders', tender.name]}
+        title={tender.name}
+        subtitle={<>
+          <span className="mono" style={{ color: 'var(--muted)' }}>{tender.id}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <span>{tender.sub}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <span>{tender.location}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <StatusPill status={tender.status} />
+          {readOnly && <>
+            <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+            <Pill tone="neutral">Read-only</Pill>
+          </>}
+        </>}
+        actions={<>
+          <Btn variant="secondary" size="md" icon="⤴" onClick={onBack}>Back</Btn>
+          <Btn variant="secondary" size="md" icon="⌗">Audit</Btn>
+          {isMarina && !readOnly && <Btn variant="primary" size="md" icon="↓">Award Pack PDF</Btn>}
+        </>}
+        tabs={tabs}
+        activeTab={tab}
+        onTab={setTab}
+      />
+
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {tab === 'overview' && <OverviewTab tender={tender} readOnly={readOnly} />}
+        {tab === 'invitations' && <InvitationsTab tender={tender} readOnly={readOnly} />}
+        {tab === 'submissions' && <SubmissionsTab tender={tender} readOnly={readOnly} />}
+        {tab === 'analysis' && (isMarina ? <AnalysisTab /> : <EmptyTab label="Analysis available after bids are opened." />)}
+        {tab === 'risks' && <RisksTab tender={tender} readOnly={readOnly} />}
+        {tab === 'documents' && <DocumentsTab tender={tender} readOnly={readOnly} />}
+        {tab === 'audit' && <AuditTab tender={tender} />}
+      </div>
+    </div>
+  );
+}
+
+function EmptyTab({ label }) {
+  return (
+    <div style={{ padding: 48, textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>
+      {label}
+    </div>
+  );
+}
+
+/* ── OVERVIEW TAB ─────────────────────────────────────────────── */
+function OverviewTab({ tender, readOnly }) {
+  return (
+    <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+
+      {/* Main content */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* Project details */}
+        <Panel title="Project details" actions={!readOnly && <Btn variant="ghost" size="sm">Edit</Btn>}>
+          <div style={{ padding: '4px 16px 16px' }}>
+            <DefList items={[
+              ['Tender ID', <span className="mono">{tender.id}</span>],
+              ['Client', tender.client],
+              ['Project Manager', tender.pm],
+              ['Location', tender.location],
+              ['Package Type', tender.packageType + ' Package'],
+              ['Currency', tender.currency],
+              ['Issued', tender.issued || <span style={{ color: 'var(--muted-2)' }}>—</span>],
+              ['Submission Deadline', tender.deadline || <span style={{ color: 'var(--muted-2)' }}>—</span>],
+              ['Opening Date', tender.opened || <span style={{ color: 'var(--muted-2)' }}>—</span>],
+              ['Estimated Budget', <span className="num" style={{ fontWeight: 500 }}>{fmtAED(tender.budget)}</span>],
+            ]} />
+          </div>
+        </Panel>
+
+        {/* Bid summary if Marina */}
+        {tender.id === 'T-2026-001' && (
+          <Panel title="Commercial summary" actions={<Btn variant="ghost" size="sm">View full analysis →</Btn>}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', borderTop: '1px solid var(--line)' }}>
+              {[
+                { l: 'Lowest Bid', v: fmtShortAED(Math.min(...TOTALS)), s: 'Al Futtaim',     t: 'var(--green)' },
+                { l: 'Highest Bid', v: fmtShortAED(Math.max(...TOTALS)), s: 'Drake & Scull', t: 'var(--red)' },
+                { l: 'Spread (L–H)', v: ((Math.max(...TOTALS) - Math.min(...TOTALS)) / Math.min(...TOTALS) * 100).toFixed(1) + '%', s: 'Negotiation room' },
+                { l: 'vs Budget', v: ((Math.min(...TOTALS) - BUDGET) / BUDGET * 100).toFixed(1) + '%', s: fmtAED(BUDGET), t: 'var(--green)' },
+              ].map((m, i) => (
+                <div key={i} style={{
+                  padding: 16,
+                  borderRight: i < 3 ? '1px solid var(--line)' : 'none',
+                }}>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 6 }}>{m.l}</div>
+                  <div className="num" style={{ fontSize: 20, fontWeight: 600, color: m.t || 'var(--ink)', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{m.v}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{m.s}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        )}
+
+        {/* Recent activity */}
+        <Panel title="Recent activity" actions={<button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>Full audit log →</button>}>
+          {(TENDER_ACTIVITY[tender.id] || []).length === 0 ? (
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--muted)', fontSize: 12, borderTop: '1px solid var(--line)' }}>
+              No activity yet. Activity will appear as the tender progresses.
+            </div>
+          ) : (
+            <div>
+              {(TENDER_ACTIVITY[tender.id] || []).slice(0, 5).map((e, i) => (
+                <div key={i} style={{
+                  display: 'grid', gridTemplateColumns: '110px 1fr', gap: 12,
+                  padding: '8px 16px',
+                  borderTop: '1px solid var(--line)',
+                  fontSize: 12,
+                }}>
+                  <span className="mono" style={{ color: 'var(--muted)', fontSize: 11 }}>{e.t}</span>
+                  <span style={{ color: 'var(--ink)' }}><span style={{ fontWeight: 500 }}>{e.u}</span> {e.a}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+
+      {/* Side panel */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        <Panel title="Status">
+          <div style={{ padding: 16 }}>
+            <StatusPill status={tender.status} />
+            <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>
+              {tender.status === 'analysis'
+                ? 'All sealed bids opened and analysed. Award decision pending committee sign-off and risk clarifications.'
+                : tender.status === 'submissions'
+                ? `${tender.bidsIn} of ${tender.contractors} contractors have submitted. Submissions remain open.`
+                : 'Tender brief still being drafted.'}
+            </div>
+          </div>
+        </Panel>
+
+        {!readOnly && <Panel title="Quick actions">
+          <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <Btn variant="secondary" size="sm" icon="✉">Send reminder</Btn>
+            <Btn variant="secondary" size="sm" icon="+">Add contractor</Btn>
+            <Btn variant="secondary" size="sm" icon="⌘">Issue addendum</Btn>
+            <Btn variant="secondary" size="sm" icon="⊟">Export BOQ</Btn>
+            <Btn variant="danger" size="sm" icon="✕">Cancel tender</Btn>
+          </div>
+        </Panel>}
+
+        <Panel title="Compliance">
+          <div style={{ padding: 16, fontSize: 12 }}>
+            <ComplianceRow label="Sealed bid storage" status="ok" />
+            <ComplianceRow label="Two-person opening" status="ok" />
+            <ComplianceRow label="Cryptographic chain" status="ok" />
+            <ComplianceRow label="Audit trail" status="ok" />
+            <ComplianceRow label="UAE data residency" status="ok" />
+          </div>
+        </Panel>
+
+      </div>
+    </div>
+  );
+}
+
+function Panel({ title, children, actions }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6 }}>
+      {title && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid var(--line)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', letterSpacing: '-0.005em' }}>{title}</div>
+          {actions}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function DefList({ items }) {
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+      <tbody>
+        {items.map(([k, v], i) => (
+          <tr key={i} style={{ borderTop: i > 0 ? '1px solid var(--line)' : 'none' }}>
+            <td style={{ padding: '8px 0', color: 'var(--muted)', width: 160, verticalAlign: 'top', fontWeight: 500 }}>{k}</td>
+            <td style={{ padding: '8px 0', color: 'var(--ink-2)' }}>{v}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function ComplianceRow({ label, status }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 0', fontSize: 12 }}>
+      <span style={{
+        width: 14, height: 14, borderRadius: 7,
+        background: status === 'ok' ? 'var(--green-bg)' : 'var(--red-bg)',
+        color: status === 'ok' ? 'var(--green)' : 'var(--red)',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 8, fontWeight: 700, flexShrink: 0,
+      }}>✓</span>
+      <span style={{ color: 'var(--ink-3)' }}>{label}</span>
+    </div>
+  );
+}
+
+/* ── INVITATIONS TAB ─────────────────────────────────────────────── */
+function InvitationsTab({ tender, readOnly }) {
+  const invites = TENDER_INVITATIONS[tender.id] || [];
+
+  if (invites.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Panel title="Invited contractors">
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <div style={{ fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginBottom: 6 }}>No invitations sent yet</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+              {tender.status === 'draft'
+                ? 'Finish the tender brief and BOQ, then select contractors to invite.'
+                : 'Select contractors from the database to invite to this tender.'}
+            </div>
+            {!readOnly && <Btn variant="primary" size="md" icon="+">Invite contractors</Btn>}
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: 24 }}>
+      <Panel title={`Invited contractors (${invites.length})`} actions={!readOnly && <>
+        <Btn variant="secondary" size="sm" icon="✉">Send reminder</Btn>
+        <Btn variant="primary" size="sm" icon="+">Add contractor</Btn>
+      </>}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+              <th style={th}>Contractor</th>
+              <th style={{ ...th, width: 80, textAlign: 'center' }}>Grade</th>
+              <th style={{ ...th, width: 200 }}>Contact</th>
+              <th style={{ ...th, width: 130 }}>Invitation Sent</th>
+              <th style={{ ...th, width: 130 }}>Viewed</th>
+              <th style={{ ...th, width: 130 }}>Submission</th>
+              <th style={{ ...th, width: 130 }}>Status</th>
+              <th style={{ ...th, width: 80 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {invites.map((inv, i) => {
+              const c = getContractor(inv.contractorId);
+              const statusTone = inv.status === 'submitted' ? 'success' : inv.status === 'pending' ? 'warning' : 'neutral';
+              const statusLabel = inv.status === 'submitted' ? 'Submitted' : inv.status === 'pending' ? 'Pending' : 'Not viewed';
+              return (
+                <tr key={inv.contractorId} style={{
+                  borderBottom: i < invites.length - 1 ? '1px solid var(--line)' : 'none',
+                  background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                }}>
+                  <td style={td}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{c.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.classification}</div>
+                  </td>
+                  <td style={{ ...td, textAlign: 'center' }}>
+                    <span className="mono" style={{
+                      display: 'inline-block', width: 22, height: 22, borderRadius: 4,
+                      background: c.grade === 'A' ? 'var(--green-bg)' : c.grade === 'B' ? '#FFF7ED' : 'var(--bg)',
+                      color: c.grade === 'A' ? 'var(--green)' : c.grade === 'B' ? 'var(--amber)' : 'var(--ink-3)',
+                      fontSize: 11, fontWeight: 700, lineHeight: '22px', textAlign: 'center',
+                    }}>{c.grade}</span>
+                  </td>
+                  <td style={{ ...td, fontSize: 11 }}>
+                    <div>{c.contact}</div>
+                    <div style={{ color: 'var(--muted)' }}>{c.email}</div>
+                  </td>
+                  <td className="mono" style={{ ...td, fontSize: 11 }}>{inv.sentAt}</td>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: inv.viewedAt ? 'var(--ink-3)' : 'var(--muted-2)' }}>
+                    {inv.viewedAt || '—'}
+                  </td>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: inv.submitted ? 'var(--ink-3)' : 'var(--muted-2)' }}>
+                    {inv.submitted || '—'}
+                  </td>
+                  <td style={td}><Pill tone={statusTone}>{statusLabel}</Pill></td>
+                  <td style={td}>
+                    <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>
+                      {inv.submitted ? 'View →' : 'Remind'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+/* ── SUBMISSIONS TAB ─────────────────────────────────────────────── */
+function SubmissionsTab({ tender, readOnly }) {
+  const invites = TENDER_INVITATIONS[tender.id] || [];
+  const submitted = invites.filter(i => i.status === 'submitted');
+  const isMarina = tender.id === 'T-2026-001';
+
+  if (invites.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Panel title="Sealed bid submissions">
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
+            No submissions yet. Submissions appear here once invited contractors submit sealed bids.
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+
+  // For Marina: bids opened, totals visible. For others: sealed, totals hidden.
+  return (
+    <div style={{ padding: 24 }}>
+      {!isMarina && tender.status !== 'analysis' && (
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#EBF2FF', border: '1px solid #BFD6FF', borderRadius: 6 }}>
+          <span style={{
+            width: 18, height: 18, borderRadius: 9, background: 'var(--accent)', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 10, fontWeight: 700, flexShrink: 0,
+          }}>i</span>
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: 'var(--accent)' }}>Bids remain sealed until opening</div>
+            <div style={{ color: 'var(--ink-3)', marginTop: 1 }}>
+              Submission contents are encrypted and cannot be opened until {tender.deadline}. Two-person committee approval required.
+            </div>
+          </div>
+        </div>
+      )}
+      <Panel title={`Sealed bids — ${submitted.length} of ${invites.length} received`} actions={
+        readOnly ? <Btn variant="ghost" size="sm" icon="↓">Export</Btn>
+        : isMarina ? <Btn variant="ghost" size="sm" icon="↓">Export</Btn>
+        : <Btn variant="secondary" size="sm" icon="✉">Send reminder to non-submitters</Btn>
+      }>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+              <th style={th}>Contractor</th>
+              <th style={{ ...th, width: 140 }}>Submitted</th>
+              <th style={{ ...th, width: 140 }}>Sealed Reference</th>
+              {isMarina && <th style={{ ...th, width: 110, textAlign: 'right' }}>Bid Total</th>}
+              {isMarina && <th style={{ ...th, width: 100, textAlign: 'right' }}>vs Lowest</th>}
+              {isMarina && <th style={{ ...th, width: 100, textAlign: 'right' }}>vs Budget</th>}
+              <th style={{ ...th, width: 120 }}>Status</th>
+              <th style={{ ...th, width: 60 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {invites.map((inv, i) => {
+              const c = getContractor(inv.contractorId);
+              const submittedHere = inv.status === 'submitted';
+              const bidIdx = isMarina && submittedHere ? BIDDING.findIndex(b => b.name === c.name) : -1;
+              const total = bidIdx >= 0 ? TOTALS[bidIdx] : null;
+              const lowest = isMarina ? Math.min(...TOTALS) : null;
+              const isLowest = total !== null && total === lowest;
+              const isHighest = total !== null && total === Math.max(...TOTALS);
+              const vsLow = total === null ? '—' : isLowest ? '—' : `+${((total - lowest) / lowest * 100).toFixed(1)}%`;
+              const vsBudget = total === null ? '—' : `${total > BUDGET ? '+' : ''}${((total - BUDGET) / BUDGET * 100).toFixed(1)}%`;
+              return (
+                <tr key={inv.contractorId} style={{
+                  borderBottom: i < invites.length - 1 ? '1px solid var(--line)' : 'none',
+                  background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                  opacity: submittedHere ? 1 : 0.65,
+                }}>
+                  <td style={td}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{c.name}</div>
+                      {isMarina && isLowest && <Pill tone="success" size="sm">Lowest</Pill>}
+                      {isMarina && isHighest && <Pill tone="danger" size="sm">Highest</Pill>}
+                    </div>
+                  </td>
+                  <td className="mono" style={{ ...td, fontSize: 11 }}>{inv.submitted || <span style={{ color: 'var(--muted-2)' }}>—</span>}</td>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--muted)' }}>{inv.sealedRef || <span style={{ color: 'var(--muted-2)' }}>—</span>}</td>
+                  {isMarina && <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 600, color: 'var(--ink)' }}>{total !== null ? fmtShortAED(total) : '—'}</td>}
+                  {isMarina && <td className="num" style={{ ...td, textAlign: 'right', color: 'var(--ink-3)' }}>{vsLow}</td>}
+                  {isMarina && <td className="num" style={{ ...td, textAlign: 'right', color: total !== null && total > BUDGET ? 'var(--red)' : 'var(--green)', fontWeight: 500 }}>{vsBudget}</td>}
+                  <td style={td}>
+                    {submittedHere
+                      ? <Pill tone={isMarina ? 'success' : 'info'}>{isMarina ? 'Opened' : 'Sealed'}</Pill>
+                      : inv.status === 'pending'
+                        ? <Pill tone="warning">Pending</Pill>
+                        : <Pill tone="neutral">Not viewed</Pill>}
+                  </td>
+                  <td style={td}>
+                    {submittedHere
+                      ? <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>View</button>
+                      : <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>Remind</button>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+/* ── ANALYSIS TAB — full BOQ matrix ─────────────────────────────── */
+function AnalysisTab() {
+  return (
+    <div style={{ padding: 24 }}>
+
+      {/* Top metrics */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+        <MetricCard label="Lowest Bid"     value={fmtShortAED(Math.min(...TOTALS))} sub="Al Futtaim Engineering" tone="var(--green)" />
+        <MetricCard label="Highest Bid"    value={fmtShortAED(Math.max(...TOTALS))} sub="Drake & Scull"          tone="var(--red)" />
+        <MetricCard label="Spread (L–H)"   value={((Math.max(...TOTALS) - Math.min(...TOTALS)) / Math.min(...TOTALS) * 100).toFixed(1) + '%'} sub="Negotiation opportunity" />
+        <MetricCard label="Best vs Budget" value={((Math.min(...TOTALS) - BUDGET) / BUDGET * 100).toFixed(1) + '%'} sub={fmtAED(BUDGET)} tone="var(--green)" />
+        <MetricCard label="Risk Flags"     value="3" sub="1 high · 2 medium" tone="var(--amber)" />
+      </div>
+
+      {/* Comparison matrix */}
+      <Panel title="Comparison matrix" actions={<>
+        <Btn variant="ghost" size="sm" icon="⌕">Filter</Btn>
+        <Btn variant="ghost" size="sm" icon="↓">Export</Btn>
+      </>}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5, minWidth: 920 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, width: 60 }}>Code</th>
+                <th style={th}>Description</th>
+                <th style={{ ...th, width: 50, textAlign: 'right' }}>Unit</th>
+                <th style={{ ...th, width: 70, textAlign: 'right' }}>Qty</th>
+                {BIDDING.map(b => (
+                  <th key={b.id} style={{ ...th, width: 96, textAlign: 'right' }}>{b.short}</th>
+                ))}
+                <th style={{ ...th, width: 60, textAlign: 'right' }}>Spread</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BOQ.map((item, i) => {
+                const validRates = item.rates.filter(r => r > 0);
+                const lo = Math.min(...validRates);
+                const hi = Math.max(...validRates);
+                const sp = ((hi - lo) / lo * 100).toFixed(0);
+                return (
+                  <tr key={i} style={{
+                    borderBottom: '1px solid var(--line)',
+                    background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                  }}>
+                    <td className="mono" style={{ padding: '8px 12px', fontSize: 10.5, color: 'var(--muted)' }}>{item.code}</td>
+                    <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--ink)' }}>{item.desc}</td>
+                    <td className="mono" style={{ padding: '8px 12px', fontSize: 11, textAlign: 'right', color: 'var(--muted)' }}>{item.unit}</td>
+                    <td className="num" style={{ padding: '8px 12px', fontSize: 11, textAlign: 'right', color: 'var(--ink-3)' }}>{fmt(item.qty)}</td>
+                    {item.rates.map((r, ri) => {
+                      const isMissing = r === 0;
+                      const isLowest = r === lo && !isMissing;
+                      const isHighest = r === hi && !isMissing;
+                      return (
+                        <td key={ri} className="num" style={{
+                          padding: '8px 12px',
+                          textAlign: 'right',
+                          fontSize: 11.5,
+                          color: isMissing ? 'var(--red)' : isLowest ? 'var(--green)' : isHighest ? 'var(--red)' : 'var(--ink-3)',
+                          fontWeight: isLowest || isHighest || isMissing ? 600 : 400,
+                          background: isMissing ? 'var(--red-bg)' : isLowest ? 'rgba(34,197,94,0.04)' : 'transparent',
+                        }}>
+                          {isMissing ? 'MISSING' : fmt(r)}
+                        </td>
+                      );
+                    })}
+                    <td className="num" style={{
+                      padding: '8px 12px',
+                      textAlign: 'right',
+                      fontSize: 11,
+                      color: parseInt(sp) > 12 ? 'var(--amber)' : 'var(--muted)',
+                      fontWeight: parseInt(sp) > 12 ? 600 : 400,
+                    }}>{sp}%</td>
+                  </tr>
+                );
+              })}
+              <tr style={{ background: 'var(--brand)', color: '#fff' }}>
+                <td colSpan={4} style={{ padding: '11px 12px', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Total Bid Value (AED)
+                </td>
+                {TOTALS.map((t, i) => {
+                  const isLow = t === Math.min(...TOTALS);
+                  const isHigh = t === Math.max(...TOTALS);
+                  return (
+                    <td key={i} className="num" style={{
+                      padding: '11px 12px',
+                      textAlign: 'right',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: isLow ? '#86EFAC' : isHigh ? '#FCA5A5' : '#fff',
+                    }}>{fmt(t)}</td>
+                  );
+                })}
+                <td className="num" style={{ padding: '11px 12px', textAlign: 'right', fontSize: 11, fontWeight: 600 }}>
+                  {((Math.max(...TOTALS) - Math.min(...TOTALS)) / Math.min(...TOTALS) * 100).toFixed(1)}%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ── RISKS TAB ─────────────────────────────────────────────── */
+function RisksTab({ tender, readOnly }) {
+  const risks = TENDER_RISKS[tender.id] || [];
+  if (risks.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Panel title="Risk register (0)">
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <div style={{ fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginBottom: 6 }}>No risks identified</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', maxWidth: 400, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+              {tender.status === 'analysis'
+                ? 'AI analysis found no flagged items. Risks will appear if rate outliers, missing rates, or unusual spreads are detected.'
+                : 'Risks are identified after sealed bids are opened and analysed.'}
+            </div>
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+  return (
+    <div style={{ padding: 24 }}>
+      <Panel title={`Risk register (${risks.length})`} actions={<Btn variant="ghost" size="sm" icon="↓">Export</Btn>}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+              <th style={{ ...th, width: 90 }}>Severity</th>
+              <th style={th}>Risk</th>
+              <th style={{ ...th, width: 160 }}>Impact</th>
+              <th style={{ ...th, width: 100 }}>Status</th>
+              {!readOnly && <th style={{ ...th, width: 80 }}></th>}
+            </tr>
+          </thead>
+          <tbody>
+            {risks.map((r, i) => (
+              <tr key={i} style={{
+                borderBottom: i < risks.length - 1 ? '1px solid var(--line)' : 'none',
+                background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+              }}>
+                <td style={td}>
+                  <Pill tone={r.sev === 'High' ? 'danger' : 'warning'}>{r.sev}</Pill>
+                </td>
+                <td style={td}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)', marginBottom: 4 }}>{r.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-4)', marginBottom: 6, lineHeight: 1.5 }}>{r.detail}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5 }}>
+                    <span style={{ fontWeight: 600, color: 'var(--ink-3)' }}>Recommendation: </span>
+                    {r.recommendation}
+                  </div>
+                </td>
+                <td className="num" style={{ ...td, fontSize: 12, color: 'var(--ink)' }}>{r.impact}</td>
+                <td style={td}><Pill tone="warning">Open</Pill></td>
+                {!readOnly && <td style={td}>
+                  <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>Resolve</button>
+                </td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+/* ── DOCUMENTS TAB ─────────────────────────────────────────────── */
+function DocumentsTab({ tender, readOnly }) {
+  const docsByTender = {
+    'T-2026-001': [
+      { name: 'Invitation to Tender.pdf',     size: '186 KB', type: 'pdf', date: '10 Mar 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'Bill of Quantities.xlsx',      size: '42 KB',  type: 'xlsx', date: '10 Mar 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'Drawings Pack (DWG).zip',      size: '4.2 MB', type: 'zip', date: '10 Mar 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'Specifications.pdf',           size: '1.8 MB', type: 'pdf', date: '10 Mar 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'Form of Tender.docx',          size: '38 KB',  type: 'docx', date: '10 Mar 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'Bid Receipt — Al Futtaim.pdf', size: '94 KB',  type: 'pdf', date: '13 Mar 2026', uploadedBy: 'System' },
+      { name: 'Bid Receipt — Arabtec.pdf',    size: '94 KB',  type: 'pdf', date: '13 Mar 2026', uploadedBy: 'System' },
+      { name: 'Award Pack — Marina Views.pdf',size: '312 KB', type: 'pdf', date: '13 Mar 2026', uploadedBy: 'System' },
+    ],
+    'T-2026-002': [
+      { name: 'Invitation to Tender.pdf',     size: '142 KB', type: 'pdf',  date: '20 Feb 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'MEP Bill of Quantities.xlsx',  size: '28 KB',  type: 'xlsx', date: '20 Feb 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'MEP Specifications.pdf',       size: '1.1 MB', type: 'pdf',  date: '20 Feb 2026', uploadedBy: 'Graham Stevens' },
+      { name: 'Bid Receipt — Drake & Scull.pdf', size: '94 KB', type: 'pdf', date: '11 Mar 2026', uploadedBy: 'System' },
+    ],
+    'T-2026-003': [],
+  };
+  const docs = docsByTender[tender.id] || [];
+
+  if (docs.length === 0) {
+    return (
+      <div style={{ padding: 24 }}>
+        <Panel title="Documents">
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <div style={{ fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginBottom: 6 }}>No documents uploaded</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+              Upload tender brief, BOQ, specifications, and drawings here. Documents are versioned and accessible to invited contractors.
+            </div>
+            {!readOnly && <Btn variant="primary" size="md" icon="↑">Upload documents</Btn>}
+          </div>
+        </Panel>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: 24 }}>
+      <Panel title={`Documents (${docs.length})`} actions={!readOnly && <Btn variant="primary" size="sm" icon="↑">Upload</Btn>}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+              <th style={{ ...th, width: 36 }}><input type="checkbox" /></th>
+              <th style={th}>Name</th>
+              <th style={{ ...th, width: 80 }}>Type</th>
+              <th style={{ ...th, width: 100, textAlign: 'right' }}>Size</th>
+              <th style={{ ...th, width: 130 }}>Uploaded By</th>
+              <th style={{ ...th, width: 130 }}>Date</th>
+              <th style={{ ...th, width: 80 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {docs.map((d, i) => (
+              <tr key={i} style={{
+                borderBottom: i < docs.length - 1 ? '1px solid var(--line)' : 'none',
+                background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+              }}>
+                <td style={td}><input type="checkbox" /></td>
+                <td style={td}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 4,
+                      background: d.type === 'pdf' ? 'var(--red-bg)' : d.type === 'xlsx' ? 'var(--green-bg)' : 'var(--bg)',
+                      color: d.type === 'pdf' ? 'var(--red)' : d.type === 'xlsx' ? 'var(--green)' : 'var(--ink-3)',
+                      fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{d.type}</span>
+                    <span style={{ color: 'var(--ink)' }}>{d.name}</span>
+                  </span>
+                </td>
+                <td style={{ ...td, color: 'var(--muted)', fontSize: 11 }}>{d.type.toUpperCase()}</td>
+                <td className="mono" style={{ ...td, textAlign: 'right', fontSize: 11, color: 'var(--muted)' }}>{d.size}</td>
+                <td style={{ ...td, fontSize: 11, color: 'var(--ink-3)' }}>{d.uploadedBy}</td>
+                <td style={{ ...td, color: 'var(--muted)', fontSize: 11 }}>{d.date}</td>
+                <td style={td}>
+                  <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>Download</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+/* ── AUDIT TAB ─────────────────────────────────────────────── */
+function AuditTab({ tender }) {
+  const events = (TENDER_ACTIVITY[tender.id] || []).map(e => ({
+    ...e,
+    tFull: e.t.includes('2026') ? e.t : (e.t.startsWith('13 Mar') || e.t.startsWith('12 Mar') || e.t.startsWith('10 Mar') ? `${e.t.split(' ').slice(0,2).join(' ')} 2026 ${e.t.split(' ')[2] || ''}` : `${e.t} 2026`),
+  }));
+  return (
+    <div style={{ padding: 24 }}>
+      {events.length > 0 && (
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16, padding: '10px 12px', background: 'var(--green-bg)', border: '1px solid #BBF7D0', borderRadius: 6 }}>
+          <span style={{
+            width: 20, height: 20, borderRadius: 10,
+            background: 'var(--green)', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 700, flexShrink: 0,
+          }}>✓</span>
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: 'var(--green)' }}>Audit chain verified</div>
+            <div style={{ color: 'var(--ink-3)', marginTop: 2 }}>{events.length} events · hash-chained · tamper-evident · last verified {events[0].t}</div>
+          </div>
+          <Btn variant="secondary" size="sm" icon="↓">Export PDF</Btn>
+        </div>
+      )}
+      <Panel title={`Audit trail · ${tender.id}`}>
+        {events.length === 0 ? (
+          <div style={{ padding: 48, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
+            No audit events yet. Events are recorded automatically as the tender progresses.
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, width: 180 }}>Timestamp</th>
+                <th style={{ ...th, width: 180 }}>Actor</th>
+                <th style={th}>Action</th>
+                <th style={{ ...th, width: 120 }}>Hash</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((e, i) => (
+                <tr key={i} style={{
+                  borderBottom: i < events.length - 1 ? '1px solid var(--line)' : 'none',
+                  background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                }}>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--ink-3)' }}>{e.t} 2026</td>
+                  <td style={{ ...td, color: 'var(--ink)' }}>{e.u}</td>
+                  <td style={{ ...td }}>{e.a}</td>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--muted)' }}>{e.hash}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   ADMIN TOOLS — Analysis, Reports, Audit Log (company-wide), Team, Settings, New Tender
+   ────────────────────────────────────────────────────────────────── */
+
+function CompanyAnalysis({ onTender }) {
+  return (
+    <div>
+      <PageHeader
+        breadcrumb={['Bluewaters Holdings', 'Analysis']}
+        title="Analysis"
+        subtitle="Cross-tender commercial intelligence and contractor performance"
+        actions={<>
+          <Btn variant="secondary" size="md" icon="↓">Export</Btn>
+          <Btn variant="secondary" size="md" icon="◰">Build report</Btn>
+        </>}
+      />
+      <div style={{ padding: 24, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+          <MetricCard label="Avg Spread (L–H)" value="13.4%" sub="Across last 6 tenders" />
+          <MetricCard label="Avg Below Budget" value="-8.2%" sub="Lowest bid vs estimate" tone="var(--green)" />
+          <MetricCard label="Cycle Time" value="14d" sub="Issue → Award" />
+          <MetricCard label="Award Rate" value="89%" sub="Tenders awarded" />
+          <MetricCard label="Avg Risk Flags" value="2.1" sub="Per tender" tone="var(--amber)" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+          <Panel title="Per-tender summary">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                  <th style={th}>Tender</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Budget</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Lowest Bid</th>
+                  <th style={{ ...th, textAlign: 'right' }}>vs Budget</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Spread</th>
+                  <th style={{ ...th, textAlign: 'right' }}>Risks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {TENDERS.map((t, i) => {
+                  const isMarina = t.id === 'T-2026-001';
+                  return (
+                    <tr key={t.id} onClick={() => onTender(t)} style={{
+                      borderBottom: i < TENDERS.length - 1 ? '1px solid var(--line)' : 'none',
+                      cursor: 'pointer',
+                      background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)',
+                    }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'} onMouseLeave={e => e.currentTarget.style.background = i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)'}>
+                      <td style={td}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{t.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.sub}</div>
+                      </td>
+                      <td className="num" style={{ ...td, textAlign: 'right' }}>{fmtShortAED(t.budget)}</td>
+                      <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 500, color: 'var(--ink)' }}>
+                        {isMarina ? fmtShortAED(Math.min(...TOTALS)) : <span style={{ color: 'var(--muted-2)' }}>—</span>}
+                      </td>
+                      <td className="num" style={{ ...td, textAlign: 'right', color: isMarina ? 'var(--green)' : 'var(--muted-2)' }}>
+                        {isMarina ? `${((Math.min(...TOTALS) - BUDGET) / BUDGET * 100).toFixed(1)}%` : '—'}
+                      </td>
+                      <td className="num" style={{ ...td, textAlign: 'right' }}>
+                        {isMarina ? `${((Math.max(...TOTALS) - Math.min(...TOTALS)) / Math.min(...TOTALS) * 100).toFixed(1)}%` : <span style={{ color: 'var(--muted-2)' }}>—</span>}
+                      </td>
+                      <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 500, color: (TENDER_RISKS[t.id] || []).length > 0 ? 'var(--amber)' : 'var(--ink-3)' }}>
+                        {(TENDER_RISKS[t.id] || []).length}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Panel>
+          <Panel title="Top contractors by win rate">
+            <div style={{ padding: '6px 0' }}>
+              {[...CONTRACTORS].sort((a, b) => b.winRate - a.winRate).slice(0, 5).map((c, i) => (
+                <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 60px 60px', gap: 12, padding: '10px 16px', borderTop: '1px solid var(--line)', alignItems: 'center', fontSize: 12 }}>
+                  <div>
+                    <div style={{ fontWeight: 500, color: 'var(--ink)' }}>{c.short}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.region}</div>
+                  </div>
+                  <div className="num" style={{ textAlign: 'right', color: 'var(--ink-3)' }}>{c.winRate}%</div>
+                  <div className="num" style={{ textAlign: 'right', color: 'var(--muted)', fontSize: 11 }}>{(c.awarded / 1000000).toFixed(1)}M</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Reports() {
+  const reports = [
+    { name: 'Tender pipeline summary',          desc: 'All open tenders with status, deadlines, contractor coverage', updated: 'Today' },
+    { name: 'Contractor performance scorecard', desc: 'Win rates, average bid variance, on-time submission %', updated: 'Yesterday' },
+    { name: 'Spend by package type',            desc: 'Awarded value broken down by works package category', updated: '2 days ago' },
+    { name: 'Cycle time trend',                 desc: 'Issue-to-award timing across last 12 months', updated: '3 days ago' },
+    { name: 'Risk register summary',            desc: 'All open risks across active tenders, severity-grouped', updated: 'Today' },
+    { name: 'Audit compliance report',          desc: 'Sealed-bid handling compliance, hash chain integrity', updated: '1 week ago' },
+  ];
+  return (
+    <div>
+      <PageHeader breadcrumb={['Bluewaters Holdings', 'Reports']} title="Reports" subtitle="Pre-built and custom reports across all your tenders" actions={<Btn variant="primary" size="md" icon="+">New report</Btn>} />
+      <div style={{ padding: 24 }}>
+        <Panel title={`Saved reports (${reports.length})`}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={th}>Report</th>
+                <th style={{ ...th, width: 130 }}>Last updated</th>
+                <th style={{ ...th, width: 120 }}>Format</th>
+                <th style={{ ...th, width: 120 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.map((r, i) => (
+                <tr key={i} style={{ borderBottom: i < reports.length - 1 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                  <td style={td}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{r.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{r.desc}</div>
+                  </td>
+                  <td style={{ ...td, fontSize: 11, color: 'var(--muted)' }}>{r.updated}</td>
+                  <td style={td}><Pill tone="neutral">PDF · XLSX</Pill></td>
+                  <td style={td}>
+                    <Btn variant="secondary" size="sm" icon="↓">Run</Btn>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function CompanyAuditLog() {
+  const events = [
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '13 Mar 09:18', u: 'System',          a: 'AI analysis completed' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '13 Mar 09:00', u: 'R. Al Hajji',     a: 'Approved opening (2/2)' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '13 Mar 08:58', u: 'Graham Stevens',  a: 'Approved opening (1/2)' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '13 Mar 08:47', u: 'Al Futtaim',      a: 'Sealed bid received' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '13 Mar 07:22', u: 'Arabtec',         a: 'Sealed bid received' },
+    { tender: 'Downtown Office Tower',id: 'T-2026-002', t: '11 Mar 16:22', u: 'Drake & Scull',   a: 'Sealed bid received' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '12 Mar 17:55', u: 'Drake & Scull',   a: 'Sealed bid received' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '12 Mar 14:30', u: 'ALEC',            a: 'Sealed bid received' },
+    { tender: 'Downtown Office Tower',id: 'T-2026-002', t: '03 Mar 14:08', u: 'Graham Stevens',  a: 'Reminder sent · 2 contractors' },
+    { tender: 'Downtown Office Tower',id: 'T-2026-002', t: '21 Feb 08:12', u: 'ALEC',            a: 'Invitation viewed' },
+    { tender: 'Downtown Office Tower',id: 'T-2026-002', t: '20 Feb 11:30', u: 'Drake & Scull',   a: 'Invitation viewed' },
+    { tender: 'Downtown Office Tower',id: 'T-2026-002', t: '20 Feb 09:14', u: 'Graham Stevens',  a: 'Invitations sent · 3 contractors' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '10 Mar 11:20', u: 'Graham Stevens',  a: 'Invitations sent · 4 contractors' },
+    { tender: 'Marina Views',         id: 'T-2026-001', t: '10 Mar 11:18', u: 'Graham Stevens',  a: 'Tender created' },
+    { tender: 'Downtown Office Tower',id: 'T-2026-002', t: '19 Feb 16:45', u: 'Graham Stevens',  a: 'Tender created' },
+  ];
+  return (
+    <div>
+      <PageHeader breadcrumb={['Bluewaters Holdings', 'Audit Log']} title="Audit Log" subtitle="Immutable, hash-chained record of every action across every tender" actions={<>
+        <Btn variant="secondary" size="md" icon="⌕">Filter</Btn>
+        <Btn variant="secondary" size="md" icon="↓">Export</Btn>
+      </>} />
+      <div style={{ padding: 24 }}>
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 16, padding: '10px 12px', background: 'var(--green-bg)', border: '1px solid #BBF7D0', borderRadius: 6 }}>
+          <span style={{
+            width: 20, height: 20, borderRadius: 10, background: 'var(--green)', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0,
+          }}>✓</span>
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: 'var(--green)' }}>All audit chains verified</div>
+            <div style={{ color: 'var(--ink-3)', marginTop: 2 }}>{events.length} events across 3 tenders · cryptographic chain integrity 100% · last verified just now</div>
+          </div>
+          <Btn variant="secondary" size="sm" icon="↓">Export verification PDF</Btn>
+        </div>
+        <Panel title={`All events (${events.length})`}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={{ ...th, width: 140 }}>Timestamp</th>
+                <th style={{ ...th, width: 180 }}>Tender</th>
+                <th style={{ ...th, width: 160 }}>Actor</th>
+                <th style={th}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((e, i) => (
+                <tr key={i} style={{ borderBottom: i < events.length - 1 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--ink-3)' }}>{e.t}</td>
+                  <td style={td}>
+                    <div style={{ fontSize: 12, color: 'var(--ink)' }}>{e.tender}</div>
+                    <div className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>{e.id}</div>
+                  </td>
+                  <td style={{ ...td, color: 'var(--ink)' }}>{e.u}</td>
+                  <td style={td}>{e.a}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function TeamRoles() {
+  const team = [
+    { name: 'Graham Stevens',    email: 'graham@bluewaters.ae',     role: 'Client Admin',       lastActive: 'Online now' },
+    { name: 'R. Al Hajji',       email: 'r.alhajji@bluewaters.ae',  role: 'Opening Committee',  lastActive: '2 hours ago' },
+    { name: 'Sarah Ahmed',       email: 'sarah@bluewaters.ae',      role: 'QS',                 lastActive: 'Yesterday' },
+    { name: 'Mark Holloway',     email: 'mark@bluewaters.ae',       role: 'Project Manager',    lastActive: '3 days ago' },
+    { name: 'Nadia Sultan',      email: 'nadia@bluewaters.ae',      role: 'Auditor',            lastActive: '1 week ago' },
+  ];
+  return (
+    <div>
+      <PageHeader breadcrumb={['Bluewaters Holdings', 'Team & Roles']} title="Team & Roles" subtitle={`${team.length} members across 4 roles`} actions={<Btn variant="primary" size="md" icon="+">Invite member</Btn>} />
+      <div style={{ padding: 24 }}>
+        <Panel title="Members">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={th}>Member</th>
+                <th style={{ ...th, width: 200 }}>Role</th>
+                <th style={{ ...th, width: 160 }}>Last active</th>
+                <th style={{ ...th, width: 100 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {team.map((m, i) => (
+                <tr key={i} style={{ borderBottom: i < team.length - 1 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                  <td style={td}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{m.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{m.email}</div>
+                  </td>
+                  <td style={td}><Pill tone={m.role === 'Client Admin' ? 'blue' : 'neutral'}>{m.role}</Pill></td>
+                  <td style={{ ...td, fontSize: 11, color: m.lastActive === 'Online now' ? 'var(--green)' : 'var(--muted)' }}>{m.lastActive}</td>
+                  <td style={td}>
+                    <button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>Edit</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function Settings() {
+  return (
+    <div>
+      <PageHeader breadcrumb={['Bluewaters Holdings', 'Settings']} title="Settings" subtitle="Workspace, branding, integrations, and security" />
+      <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Panel title="Workspace" actions={<Btn variant="ghost" size="sm">Edit</Btn>}>
+            <div style={{ padding: '4px 16px 16px' }}>
+              <DefList items={[
+                ['Workspace name', 'Bluewaters Holdings'],
+                ['Default currency', 'AED'],
+                ['Time zone', 'Asia/Dubai (UTC+4)'],
+                ['Fiscal year', '1 Jan – 31 Dec'],
+                ['Data residency', 'United Arab Emirates'],
+              ]} />
+            </div>
+          </Panel>
+          <Panel title="Tendering policy" actions={<Btn variant="ghost" size="sm">Edit</Btn>}>
+            <div style={{ padding: '4px 16px 16px' }}>
+              <DefList items={[
+                ['Two-person opening required', <Pill tone="success">Enabled</Pill>],
+                ['Cryptographic sealing', <Pill tone="success">Enabled</Pill>],
+                ['Risk threshold (rate spread)', '10%'],
+                ['Minimum bidders per tender', '3'],
+                ['Default tender duration', '14 days'],
+              ]} />
+            </div>
+          </Panel>
+          <Panel title="Integrations" actions={<Btn variant="ghost" size="sm">Connect</Btn>}>
+            <div style={{ padding: '4px 16px 16px' }}>
+              {[
+                { n: 'Microsoft Outlook',  s: 'connected',     d: 'Email sync · Invitations · Reminders' },
+                { n: 'Procore',            s: 'not-connected', d: 'Project data sync' },
+                { n: 'SAP Ariba',          s: 'not-connected', d: 'Procurement workflow' },
+                { n: 'DocuSign',           s: 'connected',     d: 'Award letter signing' },
+              ].map((it, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: i > 0 ? '1px solid var(--line)' : 'none' }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{it.n}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{it.d}</div>
+                  </div>
+                  {it.s === 'connected' ? <Pill tone="success">Connected</Pill> : <Btn variant="secondary" size="sm">Connect</Btn>}
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <Panel title="Plan">
+            <div style={{ padding: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>Enterprise</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Unlimited tenders · 25 user seats · UAE-resident infrastructure</div>
+              <Btn variant="secondary" size="sm">Manage subscription</Btn>
+            </div>
+          </Panel>
+          <Panel title="Security">
+            <div style={{ padding: 16 }}>
+              <ComplianceRow label="SSO via Microsoft Entra" status="ok" />
+              <ComplianceRow label="2FA enforced" status="ok" />
+              <ComplianceRow label="IP allowlist" status="ok" />
+              <ComplianceRow label="Audit log retention 7 years" status="ok" />
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NewTenderWizard({ onCancel }) {
+  const [step, setStep] = useState(1);
+  const steps = [
+    { n: 1, label: 'Project details' },
+    { n: 2, label: 'BOQ & documents' },
+    { n: 3, label: 'Contractors' },
+    { n: 4, label: 'Review & publish' },
+  ];
+  return (
+    <div>
+      <PageHeader breadcrumb={['Bluewaters Holdings', 'Tenders', 'New tender']} title="New Tender" subtitle="Set up a new tender in 4 steps" actions={<>
+        <Btn variant="secondary" size="md" onClick={onCancel}>Cancel</Btn>
+        <Btn variant="secondary" size="md">Save draft</Btn>
+        {step < 4 ? <Btn variant="primary" size="md" onClick={() => setStep(step + 1)}>Next: {steps[step].label} →</Btn> : <Btn variant="primary" size="md">Publish tender</Btn>}
+      </>} />
+      <div style={{ padding: 24 }}>
+        {/* Step indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 20, padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 6 }}>
+          {steps.map((s, i) => (
+            <React.Fragment key={s.n}>
+              <button onClick={() => setStep(s.n)} style={{
+                display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+                color: step >= s.n ? 'var(--accent)' : 'var(--muted)', fontWeight: step === s.n ? 600 : 500, fontSize: 13,
+              }}>
+                <span style={{
+                  width: 22, height: 22, borderRadius: 11,
+                  background: step > s.n ? 'var(--accent)' : step === s.n ? 'var(--accent)' : 'var(--bg)',
+                  color: step >= s.n ? '#fff' : 'var(--muted)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700,
+                  border: step >= s.n ? 'none' : '1px solid var(--line-2)',
+                }}>{step > s.n ? '✓' : s.n}</span>
+                {s.label}
+              </button>
+              {i < steps.length - 1 && <div style={{ flex: 1, height: 1, background: 'var(--line)', margin: '0 16px' }} />}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {step === 1 && <NewTenderStep1 />}
+        {step === 2 && <NewTenderStep2 />}
+        {step === 3 && <NewTenderStep3 />}
+        {step === 4 && <NewTenderStep4 />}
+      </div>
+    </div>
+  );
+}
+
+function FormRow({ label, children, hint, required }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--ink-3)', marginBottom: 5 }}>
+        {label} {required && <span style={{ color: 'var(--red)' }}>*</span>}
+      </label>
+      {children}
+      {hint && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>{hint}</div>}
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: '100%',
+  height: 34,
+  padding: '0 12px',
+  border: '1px solid var(--line-2)',
+  borderRadius: 5,
+  fontSize: 13,
+  color: 'var(--ink)',
+  background: 'var(--surface)',
+  outline: 'none',
+};
+
+function NewTenderStep1() {
+  return (
+    <Panel title="Project details">
+      <div style={{ padding: 24, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <FormRow label="Tender name" required hint="Shown to contractors. e.g. 'Marina Views — Main Works'.">
+          <input style={inputStyle} placeholder="e.g. Bluewaters Phase 2 — Main Works" />
+        </FormRow>
+        <FormRow label="Project location" required>
+          <input style={inputStyle} placeholder="e.g. Dubai Marina" />
+        </FormRow>
+        <FormRow label="Package type" required>
+          <select style={inputStyle}>
+            <option>Single Package</option>
+            <option>Multiple Packages</option>
+          </select>
+        </FormRow>
+        <FormRow label="Currency" required>
+          <select style={inputStyle}><option>AED</option><option>USD</option><option>EUR</option><option>GBP</option></select>
+        </FormRow>
+        <FormRow label="Estimated budget" required hint="Internal only — never shown to contractors.">
+          <input style={inputStyle} placeholder="19,000,000" />
+        </FormRow>
+        <FormRow label="Project Manager" required>
+          <select style={inputStyle}><option>Graham Stevens</option><option>Mark Holloway</option><option>Sarah Ahmed</option></select>
+        </FormRow>
+        <FormRow label="Submission deadline" required>
+          <input type="datetime-local" style={inputStyle} />
+        </FormRow>
+        <FormRow label="Opening date & time" required hint="Bids cannot be opened before this date even with two-person approval.">
+          <input type="datetime-local" style={inputStyle} />
+        </FormRow>
+      </div>
+    </Panel>
+  );
+}
+
+function NewTenderStep2() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <Panel title="Bill of Quantities" actions={<Btn variant="primary" size="sm" icon="↑">Upload XLSX</Btn>}>
+        <div style={{ padding: 32, textAlign: 'center', borderTop: '1px solid var(--line)' }}>
+          <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 6 }}>Drop your BOQ spreadsheet here</div>
+          <div style={{ fontSize: 11, color: 'var(--muted)' }}>XLSX, XLS, or CSV · Up to 10 MB · Tenderbox parses code, description, unit, qty, and budget columns automatically.</div>
+        </div>
+      </Panel>
+      <Panel title="Tender brief & supporting documents" actions={<Btn variant="primary" size="sm" icon="↑">Upload</Btn>}>
+        <div style={{ padding: 24, fontSize: 12, color: 'var(--muted)' }}>
+          Upload Form of Tender, Specifications, Drawings, and any addenda. All documents are versioned and accessible to invited contractors.
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function NewTenderStep3() {
+  return (
+    <Panel title={`Select contractors (${CONTRACTORS.filter(c => c.status === 'approved').length} available)`} actions={<>
+      <Btn variant="secondary" size="sm" icon="⌕">Filter</Btn>
+      <Btn variant="ghost" size="sm">Select all</Btn>
+    </>}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+            <th style={{ ...th, width: 36 }}><input type="checkbox" /></th>
+            <th style={th}>Company</th>
+            <th style={{ ...th, width: 80, textAlign: 'center' }}>Grade</th>
+            <th style={{ ...th, width: 200 }}>Classification</th>
+            <th style={{ ...th, width: 130 }}>Region</th>
+            <th style={{ ...th, width: 80, textAlign: 'right' }}>Win %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {CONTRACTORS.filter(c => c.status === 'approved').map((c, i) => (
+            <tr key={c.id} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+              <td style={td}><input type="checkbox" defaultChecked={i < 4} /></td>
+              <td style={td}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{c.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.contact}</div>
+              </td>
+              <td style={{ ...td, textAlign: 'center' }}>
+                <span className="mono" style={{
+                  display: 'inline-block', width: 22, height: 22, borderRadius: 4,
+                  background: c.grade === 'A' ? 'var(--green-bg)' : '#FFF7ED',
+                  color: c.grade === 'A' ? 'var(--green)' : 'var(--amber)',
+                  fontSize: 11, fontWeight: 700, lineHeight: '22px',
+                }}>{c.grade}</span>
+              </td>
+              <td style={{ ...td, fontSize: 11 }}>{c.classification}</td>
+              <td style={{ ...td, fontSize: 11 }}>{c.region}</td>
+              <td className="num" style={{ ...td, textAlign: 'right', color: 'var(--ink-3)' }}>{c.winRate || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Panel>
+  );
+}
+
+function NewTenderStep4() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ padding: '14px 16px', background: 'var(--amber-bg)', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12, color: 'var(--amber)' }}>
+        <div style={{ fontWeight: 600, marginBottom: 4 }}>Once published, this tender becomes immutable</div>
+        Invitations will be sent to selected contractors immediately. The submission deadline cannot be brought forward, and BOQ items cannot be modified without an addendum.
+      </div>
+      <Panel title="Review summary">
+        <div style={{ padding: '4px 16px 16px' }}>
+          <DefList items={[
+            ['Tender name', 'Bluewaters Phase 2 — Main Works'],
+            ['Location', 'Dubai Marina'],
+            ['Package type', 'Single Package'],
+            ['Estimated budget', <span className="num">AED 25,000,000</span>],
+            ['Submission deadline', '15 May 2026, 17:00'],
+            ['Opening date', '16 May 2026, 09:00'],
+            ['BOQ items', '24 items uploaded'],
+            ['Documents', '5 files uploaded'],
+            ['Contractors invited', '4 contractors'],
+          ]} />
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   CONTRACTOR ROLE — invitations, submission flow, awards
+   ────────────────────────────────────────────────────────────────── */
+
+const CONTRACTOR_INVITATIONS = [
+  { tenderId: 'T-2026-001', tenderName: 'Marina Views',         tenderSub: 'Main Construction Works', client: 'Bluewaters Holdings', invitedAt: '10 Mar 2026', deadline: '12 Mar 2026, 17:00', budget: 19000000, status: 'submitted',  myBid: 13050000, sealedRef: 'TB-001-3-3D81' },
+  { tenderId: 'T-2026-002', tenderName: 'Downtown Office Tower',tenderSub: 'MEP Package',             client: 'Bluewaters Holdings', invitedAt: '20 Feb 2026', deadline: '15 Mar 2026, 17:00', budget: 4800000,  status: 'in-progress', myBid: null,    sealedRef: null },
+  { tenderId: 'T-2025-114', tenderName: 'Palm Jumeirah Villa 22', tenderSub: 'Fit-out',               client: 'Emaar Hospitality',   invitedAt: '15 Jan 2026', deadline: '28 Feb 2026, 17:00', budget: 3200000,  status: 'awarded',    myBid: 2980000, sealedRef: 'EM-114-2-CC18' },
+  { tenderId: 'T-2025-098', tenderName: 'JLT Tower Refurbishment', tenderSub: 'Structural Works',     client: 'DMCC Properties',    invitedAt: '10 Dec 2025', deadline: '20 Jan 2026, 17:00', budget: 8500000,  status: 'lost',       myBid: 8400000, sealedRef: 'DM-098-1-7E20' },
+];
+
+function ContractorDashboard({ onTender }) {
+  const live = CONTRACTOR_INVITATIONS.filter(i => i.status === 'submitted' || i.status === 'in-progress');
+  const won = CONTRACTOR_INVITATIONS.filter(i => i.status === 'awarded');
+  return (
+    <div>
+      <PageHeader breadcrumb={['Al Futtaim Engineering', 'Dashboard']} title="Dashboard" subtitle="Your active invitations and bid history" />
+      <div style={{ padding: 24 }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+          <MetricCard label="Active Invitations" value={live.length} sub="To submit or pending" tone="var(--accent)" />
+          <MetricCard label="Awards Won" value={won.length} sub="Last 12 months" tone="var(--green)" />
+          <MetricCard label="Total Awarded" value="AED 47.2M" sub="Lifetime" />
+          <MetricCard label="Win Rate" value="38%" sub="Across 8 bids" />
+          <MetricCard label="Tenderbox Score" value="A" sub="Based on quality & timeliness" tone="var(--green)" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+          <Panel title="My invitations">
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                  <th style={th}>Tender</th>
+                  <th style={{ ...th, width: 130 }}>Client</th>
+                  <th style={{ ...th, width: 130 }}>Deadline</th>
+                  <th style={{ ...th, width: 110, textAlign: 'right' }}>Budget</th>
+                  <th style={{ ...th, width: 130 }}>Status</th>
+                  <th style={{ ...th, width: 28 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {CONTRACTOR_INVITATIONS.map((inv, i) => (
+                  <tr key={inv.tenderId} onClick={() => onTender(inv)} style={{ borderBottom: i < CONTRACTOR_INVITATIONS.length - 1 ? '1px solid var(--line)' : 'none', cursor: 'pointer', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'} onMouseLeave={e => e.currentTarget.style.background = i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)'}>
+                    <td style={td}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{inv.tenderName}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{inv.tenderSub}</div>
+                    </td>
+                    <td style={{ ...td, fontSize: 11 }}>{inv.client}</td>
+                    <td style={{ ...td, fontSize: 11 }}>{inv.deadline}</td>
+                    <td className="num" style={{ ...td, textAlign: 'right' }}>{fmtShortAED(inv.budget)}</td>
+                    <td style={td}>
+                      {inv.status === 'in-progress' && <Pill tone="warning">In Progress</Pill>}
+                      {inv.status === 'submitted' && <Pill tone="success">Submitted</Pill>}
+                      {inv.status === 'awarded' && <Pill tone="success">Awarded</Pill>}
+                      {inv.status === 'lost' && <Pill tone="neutral">Lost</Pill>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: 'var(--muted-2)' }}>›</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Panel>
+          <Panel title="Action required">
+            <div>
+              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--amber)' }} />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Downtown Office Tower</span>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>Deadline 15 March, 17:00 — bid not yet submitted</div>
+                <Btn variant="primary" size="sm" onClick={() => onTender(CONTRACTOR_INVITATIONS[1])}>Continue submission</Btn>
+              </div>
+              <div style={{ padding: '14px 16px', borderTop: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: 'var(--green)' }} />
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Marina Views — Awarded?</span>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>Bid submitted. Award decision pending — typically within 5–10 days of opening.</div>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContractorTenderDetail({ invitation, onBack }) {
+  const [tab, setTab] = useState('brief');
+  const tabs = [
+    { k: 'brief', label: 'Tender Brief' },
+    { k: 'boq', label: 'My Bid' },
+    { k: 'documents', label: 'Documents' },
+    { k: 'queries', label: 'Queries', count: 1 },
+  ];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <PageHeader
+        breadcrumb={['Al Futtaim Engineering', 'Invitations', invitation.tenderName]}
+        title={invitation.tenderName}
+        subtitle={<>
+          <span className="mono" style={{ color: 'var(--muted)' }}>{invitation.tenderId}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <span>{invitation.tenderSub}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <span>Client: {invitation.client}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          {invitation.status === 'submitted' && <Pill tone="success">Submitted</Pill>}
+          {invitation.status === 'in-progress' && <Pill tone="warning">In Progress · Deadline {invitation.deadline}</Pill>}
+          {invitation.status === 'awarded' && <Pill tone="success">Awarded</Pill>}
+          {invitation.status === 'lost' && <Pill tone="neutral">Lost</Pill>}
+        </>}
+        actions={<>
+          <Btn variant="secondary" size="md" icon="⤴" onClick={onBack}>Back</Btn>
+          {invitation.status === 'in-progress' && <Btn variant="primary" size="md" icon="🔒">Submit sealed bid</Btn>}
+          {invitation.status === 'submitted' && <Btn variant="secondary" size="md" disabled>Submitted · Sealed</Btn>}
+        </>}
+        tabs={tabs}
+        activeTab={tab}
+        onTab={setTab}
+      />
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {tab === 'brief' && <ContractorBrief invitation={invitation} />}
+        {tab === 'boq' && <ContractorBOQ invitation={invitation} />}
+        {tab === 'documents' && <ContractorDocuments />}
+        {tab === 'queries' && <ContractorQueries />}
+      </div>
+    </div>
+  );
+}
+
+function ContractorBrief({ invitation }) {
+  return (
+    <div style={{ padding: 24, display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+      <Panel title="Tender brief">
+        <div style={{ padding: '4px 16px 16px' }}>
+          <DefList items={[
+            ['Tender ID', <span className="mono">{invitation.tenderId}</span>],
+            ['Client', invitation.client],
+            ['Project', invitation.tenderName],
+            ['Package', invitation.tenderSub],
+            ['Invitation received', invitation.invitedAt],
+            ['Submission deadline', invitation.deadline],
+            ['Currency', 'AED'],
+          ]} />
+        </div>
+      </Panel>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Panel title="Bid status">
+          <div style={{ padding: 16 }}>
+            {invitation.status === 'submitted' && (
+              <>
+                <Pill tone="success">Submitted · Sealed</Pill>
+                <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>
+                  Sealed reference: <span className="mono" style={{ color: 'var(--ink)' }}>{invitation.sealedRef}</span>. Bid contents are encrypted and cannot be opened until the witnessed opening on the deadline.
+                </div>
+              </>
+            )}
+            {invitation.status === 'in-progress' && (
+              <>
+                <Pill tone="warning">In Progress</Pill>
+                <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>
+                  Complete the BOQ on the My Bid tab and submit before {invitation.deadline}.
+                </div>
+              </>
+            )}
+            {invitation.status === 'awarded' && (
+              <>
+                <Pill tone="success">Awarded</Pill>
+                <div style={{ marginTop: 12, fontSize: 12, color: 'var(--muted)', lineHeight: 1.55 }}>
+                  Congratulations — you have been awarded this tender. Award letter and contract will follow.
+                </div>
+              </>
+            )}
+          </div>
+        </Panel>
+        <Panel title="Need to ask?">
+          <div style={{ padding: 16, fontSize: 12, color: 'var(--muted)', lineHeight: 1.6 }}>
+            Use the Queries tab to ask the client a clarification question. All answers are shared with all bidders to keep the tender fair.
+            <div style={{ marginTop: 12 }}>
+              <Btn variant="secondary" size="sm" icon="?">Raise query</Btn>
+            </div>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function ContractorBOQ({ invitation }) {
+  const submitted = invitation.status === 'submitted' || invitation.status === 'awarded' || invitation.status === 'lost';
+  return (
+    <div style={{ padding: 24 }}>
+      {!submitted && (
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--amber-bg)', border: '1px solid #FCD34D', borderRadius: 6 }}>
+          <span style={{ width: 18, height: 18, borderRadius: 9, background: 'var(--amber)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>!</span>
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: 'var(--amber)' }}>Bid in progress — not yet submitted</div>
+            <div style={{ color: 'var(--ink-3)', marginTop: 1 }}>Enter rates against each line item. Once you submit, your bid is sealed and cannot be modified.</div>
+          </div>
+        </div>
+      )}
+      <Panel title={`Bill of Quantities — ${BOQ.length} items`} actions={!submitted ? <>
+        <Btn variant="secondary" size="sm" icon="↑">Import XLSX</Btn>
+        <Btn variant="secondary" size="sm" icon="↓">Download template</Btn>
+      </> : <Btn variant="ghost" size="sm" icon="↓">Download submitted bid</Btn>}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+              <th style={{ ...th, width: 60 }}>Code</th>
+              <th style={th}>Description</th>
+              <th style={{ ...th, width: 60, textAlign: 'right' }}>Unit</th>
+              <th style={{ ...th, width: 80, textAlign: 'right' }}>Qty</th>
+              <th style={{ ...th, width: 130, textAlign: 'right' }}>Your Rate (AED)</th>
+              <th style={{ ...th, width: 140, textAlign: 'right' }}>Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {BOQ.slice(0, 8).map((item, i) => {
+              const myRate = invitation.tenderId === 'T-2026-001' ? item.rates[1] : 0;
+              return (
+                <tr key={i} style={{ borderBottom: '1px solid var(--line)', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                  <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--muted)' }}>{item.code}</td>
+                  <td style={td}>{item.desc}</td>
+                  <td style={{ ...td, textAlign: 'right', color: 'var(--muted)', fontSize: 11 }}>{item.unit}</td>
+                  <td className="num" style={{ ...td, textAlign: 'right' }}>{fmt(item.qty)}</td>
+                  <td style={{ ...td, textAlign: 'right' }}>
+                    {submitted
+                      ? <span className="num" style={{ fontWeight: 500, color: 'var(--ink)' }}>{fmt(myRate)}</span>
+                      : <input type="number" defaultValue={myRate || ''} style={{ ...inputStyle, height: 28, width: 110, textAlign: 'right', padding: '0 8px', fontFamily: 'JetBrains Mono, monospace' }} />}
+                  </td>
+                  <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 500, color: 'var(--ink)' }}>{myRate > 0 ? fmt(item.qty * myRate) : '—'}</td>
+                </tr>
+              );
+            })}
+            <tr>
+              <td colSpan={6} style={{ padding: '11px 12px', fontSize: 11, color: 'var(--muted)', textAlign: 'center', fontStyle: 'italic', background: 'var(--bg)' }}>
+                … {BOQ.length - 8} more line items …
+              </td>
+            </tr>
+            <tr style={{ background: 'var(--brand)', color: '#fff' }}>
+              <td colSpan={5} style={{ padding: '12px 12px', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Total Bid Value (AED)
+              </td>
+              <td className="num" style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13, fontWeight: 700 }}>
+                {invitation.myBid ? fmt(invitation.myBid) : '—'}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+function ContractorDocuments() {
+  const docs = [
+    { name: 'Invitation to Tender.pdf',     size: '186 KB', type: 'pdf', date: '10 Mar 2026' },
+    { name: 'Bill of Quantities.xlsx',      size: '42 KB',  type: 'xlsx', date: '10 Mar 2026' },
+    { name: 'Drawings Pack (DWG).zip',      size: '4.2 MB', type: 'zip', date: '10 Mar 2026' },
+    { name: 'Specifications.pdf',           size: '1.8 MB', type: 'pdf', date: '10 Mar 2026' },
+    { name: 'Form of Tender.docx',          size: '38 KB',  type: 'docx', date: '10 Mar 2026' },
+  ];
+  return (
+    <div style={{ padding: 24 }}>
+      <Panel title={`Tender documents (${docs.length})`}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <thead>
+            <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+              <th style={th}>Name</th>
+              <th style={{ ...th, width: 80 }}>Type</th>
+              <th style={{ ...th, width: 100, textAlign: 'right' }}>Size</th>
+              <th style={{ ...th, width: 130 }}>Issued</th>
+              <th style={{ ...th, width: 100 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {docs.map((d, i) => (
+              <tr key={i} style={{ borderBottom: i < docs.length - 1 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                <td style={td}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{
+                      width: 22, height: 22, borderRadius: 4,
+                      background: d.type === 'pdf' ? 'var(--red-bg)' : d.type === 'xlsx' ? 'var(--green-bg)' : 'var(--bg)',
+                      color: d.type === 'pdf' ? 'var(--red)' : d.type === 'xlsx' ? 'var(--green)' : 'var(--ink-3)',
+                      fontSize: 9, fontWeight: 700, textTransform: 'uppercase',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{d.type}</span>
+                    <span style={{ color: 'var(--ink)' }}>{d.name}</span>
+                  </span>
+                </td>
+                <td style={{ ...td, color: 'var(--muted)', fontSize: 11 }}>{d.type.toUpperCase()}</td>
+                <td className="mono" style={{ ...td, textAlign: 'right', fontSize: 11, color: 'var(--muted)' }}>{d.size}</td>
+                <td style={{ ...td, color: 'var(--muted)', fontSize: 11 }}>{d.date}</td>
+                <td style={td}><button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>Download</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
+    </div>
+  );
+}
+
+function ContractorQueries() {
+  const queries = [
+    { who: 'Bluewaters Holdings', when: '11 Mar 14:20', q: 'Confirmation: Item 04.001 (Chilled Water System) is for R-410A only, not R-32.', a: 'Confirmed: R-410A. R-32 is not in scope for this package.', status: 'answered' },
+  ];
+  return (
+    <div style={{ padding: 24 }}>
+      <Panel title="Clarification queries" actions={<Btn variant="primary" size="sm" icon="+">Raise query</Btn>}>
+        <div>
+          {queries.map((q, i) => (
+            <div key={i} style={{ padding: '14px 16px', borderTop: '1px solid var(--line)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Query #{i + 1}</div>
+                <Pill tone="success">Answered</Pill>
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--ink-3)', marginBottom: 8, lineHeight: 1.5 }}>{q.q}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 10 }}>You · {q.when}</div>
+              <div style={{ padding: '10px 12px', background: 'var(--bg)', borderRadius: 5, fontSize: 12, color: 'var(--ink)', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Response from {q.who} · 11 Mar 16:08</div>
+                {q.a}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   COMMITTEE ROLE — pending approvals, opening ceremony, history
+   ────────────────────────────────────────────────────────────────── */
+
+const COMMITTEE_PENDING = [
+  { tenderId: 'T-2026-001', tenderName: 'Marina Views', tenderSub: 'Main Construction Works', client: 'Bluewaters Holdings', scheduledFor: '13 Mar 2026, 09:00', bidsCount: 4, otherApprovals: 1, totalApprovals: 2, status: 'awaiting-other' },
+];
+
+const COMMITTEE_HISTORY = [
+  { tenderId: 'T-2025-098', tenderName: 'JLT Tower Refurbishment', client: 'DMCC Properties',     opened: '20 Jan 2026, 10:00', bidsCount: 5, witnessedBy: ['R. Al Hajji', 'M. Al Suwaidi'] },
+  { tenderId: 'T-2025-114', tenderName: 'Palm Jumeirah Villa 22',  client: 'Emaar Hospitality',   opened: '28 Feb 2026, 09:00', bidsCount: 3, witnessedBy: ['R. Al Hajji', 'F. Al Mansoori'] },
+  { tenderId: 'T-2025-076', tenderName: 'Business Bay Tower',      client: 'Bluewaters Holdings', opened: '10 Dec 2025, 11:00', bidsCount: 4, witnessedBy: ['R. Al Hajji', 'M. Al Suwaidi'] },
+];
+
+function CommitteeDashboard({ onTender }) {
+  return (
+    <div>
+      <PageHeader breadcrumb={['Committee', 'Pending']} title="Pending openings" subtitle={`${COMMITTEE_PENDING.length} sealed bid opening awaiting your approval`} />
+      <div style={{ padding: 24 }}>
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#EBF2FF', border: '1px solid #BFD6FF', borderRadius: 6 }}>
+          <span style={{ width: 18, height: 18, borderRadius: 9, background: 'var(--accent)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>i</span>
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: 'var(--accent)' }}>Two-person opening protocol</div>
+            <div style={{ color: 'var(--ink-3)', marginTop: 1 }}>Sealed bids can only be opened with approval from two committee members. Your action will be cryptographically recorded.</div>
+          </div>
+        </div>
+        <Panel title="Awaiting approval">
+          {COMMITTEE_PENDING.length === 0 ? (
+            <div style={{ padding: 48, textAlign: 'center', color: 'var(--muted)', fontSize: 12 }}>
+              No openings awaiting your approval.
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                  <th style={th}>Tender</th>
+                  <th style={{ ...th, width: 160 }}>Client</th>
+                  <th style={{ ...th, width: 160 }}>Scheduled For</th>
+                  <th style={{ ...th, width: 90, textAlign: 'center' }}>Bids</th>
+                  <th style={{ ...th, width: 130 }}>Approvals</th>
+                  <th style={{ ...th, width: 220 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMMITTEE_PENDING.map((p, i) => (
+                  <tr key={p.tenderId} style={{ borderBottom: i < COMMITTEE_PENDING.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                    <td style={td}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{p.tenderName}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{p.tenderSub}</div>
+                    </td>
+                    <td style={{ ...td, fontSize: 11 }}>{p.client}</td>
+                    <td style={{ ...td, fontSize: 11 }}>{p.scheduledFor}</td>
+                    <td className="num" style={{ ...td, textAlign: 'center', fontWeight: 500, color: 'var(--ink)' }}>{p.bidsCount}</td>
+                    <td style={td}><Pill tone="warning">{p.otherApprovals} of {p.totalApprovals} given</Pill></td>
+                    <td style={td}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <Btn variant="primary" size="sm" onClick={() => onTender(p)}>Review & approve</Btn>
+                        <Btn variant="ghost" size="sm">Decline</Btn>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function CommitteeOpeningCeremony({ pending, onBack, onApprove }) {
+  return (
+    <div>
+      <PageHeader
+        breadcrumb={['Committee', 'Pending', pending.tenderName]}
+        title={`Opening Ceremony · ${pending.tenderName}`}
+        subtitle={<>
+          <span className="mono" style={{ color: 'var(--muted)' }}>{pending.tenderId}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <span>{pending.tenderSub}</span>
+          <span style={{ color: 'var(--muted-2)', margin: '0 8px' }}>·</span>
+          <span>Scheduled {pending.scheduledFor}</span>
+        </>}
+        actions={<Btn variant="secondary" size="md" icon="⤴" onClick={onBack}>Back</Btn>}
+      />
+      <div style={{ padding: 24 }}>
+        <div style={{ marginBottom: 16, padding: '14px 16px', background: 'var(--amber-bg)', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12 }}>
+          <div style={{ fontWeight: 600, color: 'var(--amber)', marginBottom: 4 }}>Confirm: by approving you participate in opening sealed bids</div>
+          <div style={{ color: 'var(--ink-3)' }}>Your name and timestamp will be cryptographically recorded in the audit chain. The opening cannot proceed until both committee members have approved.</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(280px, 1fr)', gap: 16 }}>
+          <Panel title={`Sealed bids — ${pending.bidsCount} received`}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                  <th style={th}>Contractor</th>
+                  <th style={{ ...th, width: 140 }}>Submitted</th>
+                  <th style={{ ...th, width: 160 }}>Sealed Reference</th>
+                  <th style={{ ...th, width: 100 }}>State</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(TENDER_INVITATIONS[pending.tenderId] || []).map((inv, i) => {
+                  const c = getContractor(inv.contractorId);
+                  return (
+                    <tr key={inv.contractorId} style={{ borderBottom: i < 3 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                      <td style={td}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{c?.name}</div>
+                      </td>
+                      <td className="mono" style={{ ...td, fontSize: 11 }}>{inv.submitted}</td>
+                      <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--muted)' }}>{inv.sealedRef}</td>
+                      <td style={td}><Pill tone="info">Sealed</Pill></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Panel>
+          <Panel title="Approval status">
+            <div style={{ padding: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>Graham Stevens</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>Client Admin · approved 08:58</div>
+                </div>
+                <Pill tone="success">Approved</Pill>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0' }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>R. Al Hajji</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>Committee · awaiting your action</div>
+                </div>
+                <Pill tone="warning">Pending</Pill>
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Btn variant="primary" size="lg" onClick={onApprove}>Approve opening (2 of 2)</Btn>
+                <Btn variant="danger" size="md">Decline opening</Btn>
+              </div>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommitteeHistory() {
+  return (
+    <div>
+      <PageHeader breadcrumb={['Committee', 'History']} title="Opening history" subtitle={`${COMMITTEE_HISTORY.length} openings witnessed`} actions={<Btn variant="secondary" size="md" icon="↓">Export</Btn>} />
+      <div style={{ padding: 24 }}>
+        <Panel title="Witnessed openings">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={th}>Tender</th>
+                <th style={{ ...th, width: 180 }}>Client</th>
+                <th style={{ ...th, width: 160 }}>Opened</th>
+                <th style={{ ...th, width: 60, textAlign: 'center' }}>Bids</th>
+                <th style={{ ...th, width: 220 }}>Witnessed by</th>
+                <th style={{ ...th, width: 80 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {COMMITTEE_HISTORY.map((h, i) => (
+                <tr key={h.tenderId} style={{ borderBottom: i < COMMITTEE_HISTORY.length - 1 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                  <td style={td}>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{h.tenderName}</div>
+                    <div className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{h.tenderId}</div>
+                  </td>
+                  <td style={{ ...td, fontSize: 11 }}>{h.client}</td>
+                  <td className="mono" style={{ ...td, fontSize: 11 }}>{h.opened}</td>
+                  <td className="num" style={{ ...td, textAlign: 'center', fontWeight: 500 }}>{h.bidsCount}</td>
+                  <td style={{ ...td, fontSize: 11 }}>{h.witnessedBy.join(', ')}</td>
+                  <td style={td}><button style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500, cursor: 'pointer' }}>View</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   AUDITOR ROLE — read-only tenders, audit log, verifications
+   ────────────────────────────────────────────────────────────────── */
+
+function AuditorTendersList({ onTender }) {
+  return (
+    <div>
+      <PageHeader breadcrumb={['Auditor view', 'All tenders']} title="All Tenders" subtitle={`${TENDERS.length} tenders · read-only access`} actions={<Btn variant="secondary" size="md" icon="↓">Export</Btn>} />
+      <div style={{ padding: 24 }}>
+        <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--bg)', border: '1px solid var(--line-2)', borderRadius: 6 }}>
+          <span style={{ width: 18, height: 18, borderRadius: 9, background: 'var(--ink-3)', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>👁</span>
+          <div style={{ flex: 1, fontSize: 12 }}>
+            <div style={{ fontWeight: 600, color: 'var(--ink-3)' }}>Read-only auditor session</div>
+            <div style={{ color: 'var(--muted)', marginTop: 1 }}>You have read access to all tender data, bid history, and the immutable audit chain. No modifications can be made.</div>
+          </div>
+        </div>
+        <Panel title="Tenders">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={th}>Project</th>
+                <th style={{ ...th, width: 110 }}>Tender ID</th>
+                <th style={{ ...th, width: 120 }}>Status</th>
+                <th style={{ ...th, width: 110, textAlign: 'right' }}>Budget</th>
+                <th style={{ ...th, width: 80, textAlign: 'center' }}>Bids</th>
+                <th style={{ ...th, width: 120 }}>Audit Chain</th>
+                <th style={{ ...th, width: 28 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {TENDERS.map((t, i) => {
+                const events = (TENDER_ACTIVITY[t.id] || []).length;
+                return (
+                  <tr key={t.id} onClick={() => onTender(t)} style={{ borderBottom: i < TENDERS.length - 1 ? '1px solid var(--line)' : 'none', cursor: 'pointer', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--hover)'} onMouseLeave={e => e.currentTarget.style.background = i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)'}>
+                    <td style={td}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{t.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--muted)' }}>{t.sub}</div>
+                    </td>
+                    <td className="mono" style={{ ...td, fontSize: 11 }}>{t.id}</td>
+                    <td style={td}><StatusPill status={t.status} /></td>
+                    <td className="num" style={{ ...td, textAlign: 'right' }}>{fmtShortAED(t.budget)}</td>
+                    <td className="num" style={{ ...td, textAlign: 'center' }}>{t.bidsIn}/{t.contractors}</td>
+                    <td style={td}>
+                      {events > 0 ? <Pill tone="success">{events} events · valid</Pill> : <Pill tone="neutral">—</Pill>}
+                    </td>
+                    <td style={{ ...td, textAlign: 'right', color: 'var(--muted-2)' }}>›</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+function AuditorVerifications() {
+  return (
+    <div>
+      <PageHeader breadcrumb={['Auditor view', 'Verifications']} title="Chain Verifications" subtitle="Cryptographic integrity proof for every audit chain in the system" />
+      <div style={{ padding: 24 }}>
+        <Panel title="Per-tender chain status">
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+            <thead>
+              <tr style={{ background: 'var(--bg)', borderTop: '1px solid var(--line)', borderBottom: '1px solid var(--line)' }}>
+                <th style={th}>Tender</th>
+                <th style={{ ...th, width: 110 }}>Tender ID</th>
+                <th style={{ ...th, width: 80, textAlign: 'right' }}>Events</th>
+                <th style={{ ...th, width: 130 }}>Last verified</th>
+                <th style={{ ...th, width: 120 }}>Chain Integrity</th>
+                <th style={{ ...th, width: 100 }}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {TENDERS.map((t, i) => {
+                const events = (TENDER_ACTIVITY[t.id] || []).length;
+                return (
+                  <tr key={t.id} style={{ borderBottom: i < TENDERS.length - 1 ? '1px solid var(--line)' : 'none', background: i % 2 === 1 ? 'var(--surface-alt)' : 'var(--surface)' }}>
+                    <td style={td}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--ink)' }}>{t.name}</div>
+                    </td>
+                    <td className="mono" style={{ ...td, fontSize: 11 }}>{t.id}</td>
+                    <td className="num" style={{ ...td, textAlign: 'right', fontWeight: 500 }}>{events}</td>
+                    <td className="mono" style={{ ...td, fontSize: 11, color: 'var(--muted)' }}>Just now</td>
+                    <td style={td}>{events > 0 ? <Pill tone="success">100% valid</Pill> : <Pill tone="neutral">No events</Pill>}</td>
+                    <td style={td}><Btn variant="secondary" size="sm" icon="↓">Export</Btn></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   APP — orchestrator
+   ────────────────────────────────────────────────────────────────── */
+
+function App() {
+  const [role, setRole] = useState(null);
+  const [tool, setTool] = useState(null);
+  const [activeTender, setActiveTender] = useState(null);          // admin & auditor
+  const [activeInvitation, setActiveInvitation] = useState(null);  // contractor
+  const [activePending, setActivePending] = useState(null);        // committee
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Initial tool when role is selected
+  const defaultTool = (r) => r === 'admin'      ? 'dashboard'
+                          : r === 'contractor'  ? 'dashboard'
+                          : r === 'committee'   ? 'pending'
+                          :                       'tenders';
+
+  const handlePickRole = (r) => {
+    setRole(r);
+    setTool(defaultTool(r));
+    setActiveTender(null);
+    setActiveInvitation(null);
+    setActivePending(null);
+  };
+
+  const handleSignOut = () => {
+    setRole(null); setTool(null);
+    setActiveTender(null); setActiveInvitation(null); setActivePending(null);
+  };
+
+  const handleToolChange = (t) => {
+    setTool(t);
+    setActiveTender(null);
+    setActiveInvitation(null);
+    setActivePending(null);
+  };
+
+  if (loading) {
+    return <div className="loading"><div className="loading-mark loading-dot">Tenderbox</div></div>;
+  }
+  if (!role) return <RoleScreen onPick={handlePickRole} />;
+
+  // Build the body for whichever role is signed in
+  let body;
+
+  if (role === 'admin') {
+    if (activeTender) {
+      body = <TenderDetail tender={activeTender} onBack={() => setActiveTender(null)} />;
+    } else if (tool === 'newTender') {
+      body = <NewTenderWizard onCancel={() => setTool('tenders')} />;
+    } else if (tool === 'dashboard') {
+      body = <Dashboard onTender={setActiveTender} onTool={setTool} />;
+    } else if (tool === 'tenders') {
+      body = <TendersList onTender={setActiveTender} />;
+    } else if (tool === 'contractors') {
+      body = <ContractorsList />;
+    } else if (tool === 'analysis') {
+      body = <CompanyAnalysis onTender={setActiveTender} />;
+    } else if (tool === 'reports') {
+      body = <Reports />;
+    } else if (tool === 'audit') {
+      body = <CompanyAuditLog />;
+    } else if (tool === 'team') {
+      body = <TeamRoles />;
+    } else if (tool === 'settings') {
+      body = <Settings />;
+    } else {
+      body = <Dashboard onTender={setActiveTender} onTool={setTool} />;
+    }
+  }
+  else if (role === 'contractor') {
+    if (activeInvitation) {
+      body = <ContractorTenderDetail invitation={activeInvitation} onBack={() => setActiveInvitation(null)} />;
+    } else if (tool === 'dashboard' || tool === 'invitations') {
+      body = <ContractorDashboard onTender={setActiveInvitation} />;
+    } else if (tool === 'submissions') {
+      body = <ContractorDashboard onTender={setActiveInvitation} />;
+    } else if (tool === 'awards') {
+      body = <ContractorDashboard onTender={setActiveInvitation} />;
+    } else {
+      body = <ContractorDashboard onTender={setActiveInvitation} />;
+    }
+  }
+  else if (role === 'committee') {
+    if (activePending) {
+      body = <CommitteeOpeningCeremony
+        pending={activePending}
+        onBack={() => setActivePending(null)}
+        onApprove={() => setActivePending(null)}
+      />;
+    } else if (tool === 'pending') {
+      body = <CommitteeDashboard onTender={setActivePending} />;
+    } else if (tool === 'history') {
+      body = <CommitteeHistory />;
+    } else {
+      body = <CommitteeDashboard onTender={setActivePending} />;
+    }
+  }
+  else if (role === 'auditor') {
+    if (activeTender) {
+      body = <TenderDetail tender={activeTender} onBack={() => setActiveTender(null)} readOnly={true} />;
+    } else if (tool === 'tenders') {
+      body = <AuditorTendersList onTender={setActiveTender} />;
+    } else if (tool === 'audit') {
+      body = <CompanyAuditLog />;
+    } else if (tool === 'verifications') {
+      body = <AuditorVerifications />;
+    } else {
+      body = <AuditorTendersList onTender={setActiveTender} />;
+    }
+  }
+
+  return (
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <TopNav role={role} onSignOut={handleSignOut} />
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        <ToolNav active={tool} onChange={handleToolChange} role={role} />
+        <main style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {body}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
