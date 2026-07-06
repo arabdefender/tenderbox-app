@@ -423,6 +423,242 @@ function downloadAnalysisPDF(){
   doc.save('Tenderbox_T-2026-001_Analysis_Report.pdf');
 }
 
+// ── NEGOTIATION PACK DATA (per contractor, identical structure) ────────
+const RECEIPTS = ['RCT-2841-7F2A','RCT-2938-9C41','RCT-3035-3B08','RCT-3132-E65D'];
+const NEG_DATA = [
+  { flags:7, prelims:8.2, ohp:5.5, arithmetic:{delta:'+12,400',corrected:'18,252,400',rows:[['02.002','RC Columns: extension error, qty x rate','+9,150'],['05.001','Floor tiling: page total rounding','+3,250']]},
+    missing:[['03.003','Movement joints to blockwork','m','420','18.50','7,770'],['05.004','Porcelain skirting to corridors','m','1,150','32.00','36,800']],
+    high:[],
+    low:[['02.002','RC Columns & Shear Walls','1,850/m³','1,935','−4.4%','Confirm scope coverage at this rate'],['04.002','Electrical HV/LV Works','1,450,000','1,470,000','−1.4%','Confirm cable specification allowed'],['06.001','Curtain Wall & Glazing','680/m²','708','−4.0%','Confirm DGU Low-E specification']],
+    ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','500,000','Unchanged']],
+    psFlag:null,
+    quals:[['Q1','Dewatering assumed not required','Withdraw, or price as a fixed inclusion']] },
+  { flags:9, prelims:9.1, ohp:6.0, arithmetic:{delta:'0',corrected:'19,100,000',rows:[['—','No arithmetic errors identified','0']]},
+    missing:[['07.001','Lifts & Escalators (8 units)','sum','1','1,795,000','1,795,000+']],
+    high:[['03.001','External Block & Plaster','88/m²','84.7','+3.9%','Substantiate or revise']],
+    low:[['04.002','Electrical HV/LV Works','1,520,000','1,470,000','+3.4%','No action, within tolerance']],
+    ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','260,000','REDUCED by 240,000']],
+    psFlag:'PS-02 Contingency has been reduced from the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
+    quals:[['Q1','Construction programme not submitted','Mandatory item: submit with your response'],['Q2','Lifts excluded from offer','Unacceptable: price item 07.001 or confirm inclusion']] },
+  { flags:6, prelims:11.4, ohp:7.5, arithmetic:{delta:'−8,200',corrected:'19,631,800',rows:[['06.001','Curtain wall: duplicated carry-forward','−8,200']]},
+    missing:[],
+    high:[['02.002','RC Columns & Shear Walls','2,100/m³','1,880','+11.7%','Substantiate or revise'],['02.003','RC Beams & Slabs','1,820/m³','1,688','+7.8%','Substantiate or revise']],
+    low:[['06.002','Entrance Feature Canopy','175,000','187,500','−6.7%','Confirm scope coverage']],
+    ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','500,000','Unchanged']],
+    psFlag:null,
+    quals:[['Q1','Steel price fluctuation rider','Withdraw: lump sum contract, no fluctuation provisions']] },
+  { flags:8, prelims:12.8, ohp:8.0, arithmetic:{delta:'0',corrected:'20,450,000',rows:[['—','No arithmetic errors identified','0']]},
+    missing:[],
+    high:[['04.001','Chilled Water System (HVAC)','2,400,000','2,100,000','+14.3%','Substantiate or revise: ~300,000 above median'],['05.001','Porcelain Floor Tiling','145/m²','127.7','+13.5%','Substantiate or revise']],
+    low:[],
+    ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','650,000','INCREASED by 150,000']],
+    psFlag:'PS-02 Contingency has been increased above the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
+    quals:[['Q1','HVAC based on alternative manufacturer','Confirm compliance with specified performance or revert to specified system']] },
+];
+const AT_STYLE = {theme:'grid',styles:{fontSize:7.5,textColor:[16,20,24],lineColor:[216,210,198],lineWidth:0.2,cellPadding:2},headStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontSize:7.5,fontStyle:'bold'},alternateRowStyles:{fillColor:[250,248,244]}};
+
+// ── PDF: PER-CONTRACTOR NEGOTIATION PACK ──────────────────────────────
+function downloadNegotiationPack(ci){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+  const con=CONTRACTORS_BIDDING[ci], d=NEG_DATA[ci];
+  // Cover
+  doc.setFillColor(16,20,24);doc.rect(0,0,210,297,'F');doc.setFillColor(176,97,26);doc.rect(0,0,5,297,'F');
+  doc.setFontSize(26);doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.text('TENDERBOX',22,30);
+  doc.setFontSize(9);doc.setTextColor(199,123,59);doc.setFont('helvetica','bold');doc.text('NEGOTIATION PACK · ROUND 1',22,60);
+  doc.setFontSize(21);doc.setTextColor(255,255,255);doc.text(con.name,22,74);
+  doc.setFontSize(10);doc.setTextColor(138,129,119);doc.setFont('helvetica','normal');
+  doc.text('Marina Views Tower, Main Construction Works · T-2026-001',22,84);
+  doc.setFillColor(35,40,46);doc.roundedRect(22,100,166,42,1,1,'F');
+  [['Issued','13 March 2026, 14:00 (UAE Time)'],['Respond By','20 March 2026, 17:00 (UAE Time)'],['Response Route','Sealed resubmission via app.tenderbox.ae'],['Items For Your Attention',String(d.flags)]].forEach(([k,v],i)=>{
+    const ry=109+i*8.5;doc.setFontSize(8);doc.setTextColor(190,178,162);doc.setFont('helvetica','normal');doc.text(k,30,ry);
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.text(v,95,ry);
+  });
+  doc.setFontSize(8.5);doc.setTextColor(222,190,158);doc.setFont('helvetica','bold');doc.text('FAIR PROCESS STATEMENT',22,160);
+  doc.setFontSize(8);doc.setTextColor(190,178,162);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('An identically structured pack has been issued to every tenderer, with the same response deadline. Revised prices will be arithmetically checked and compared like-for-like. No tenderer receives information about any other tenderer\'s pricing.',166),22,168);
+  doc.setFontSize(7.5);doc.setTextColor(150,140,128);
+  doc.text('CONFIDENTIAL: Issued solely to the named tenderer. Not for redistribution.',22,273);
+  // Page 2: arithmetic + missing
+  doc.addPage();
+  let y=pdfBrandedHeader(doc,'Section 1: Arithmetic Check','Negotiation Pack · '+con.name+' · T-2026-001');
+  doc.setFontSize(8.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('Your priced bill has been arithmetically checked as submitted. Corrections below are extensions and casting only; rates are unchanged. The corrected total forms the baseline for comparison.',180),15,y+2);y+=12;
+  doc.autoTable({startY:y,head:[['Item','Finding','Adjustment (AED)']],body:d.arithmetic.rows,columnStyles:{2:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+4;
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','bold');
+  doc.text('Net adjustment: AED '+d.arithmetic.delta+'    ·    Corrected tender total: AED '+d.arithmetic.corrected,15,y+3);y+=12;
+  y=pdfSectionLabel(doc,'SECTION 2: MISSING / UNPRICED ITEMS',y);
+  if(d.missing.length){
+    doc.autoTable({startY:y,head:[['Code','Description','Unit','Qty','Field Median (AED)','Exposure (AED)']],body:d.missing,columnStyles:{3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}},...AT_STYLE});
+    y=doc.lastAutoTable.finalY+4;
+    doc.setFontSize(8);doc.setTextColor(179,54,43);doc.setFont('helvetica','bold');
+    doc.text('Action required: price each item above, or confirm in writing that it is included within your rates.',15,y+3);y+=10;
+  } else {
+    doc.setFontSize(8.5);doc.setTextColor(30,127,79);doc.setFont('helvetica','normal');doc.text('No missing or unpriced items identified. No action required in this section.',15,y+3);y+=10;
+  }
+  // Page 3: rate analysis
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'Section 3: Rate Analysis','Negotiation Pack · '+con.name+' · T-2026-001');
+  y=pdfSectionLabel(doc,'3A: RATES ABOVE THE FIELD (SUBSTANTIATE OR REVISE)',y);
+  if(d.high.length){
+    doc.autoTable({startY:y,head:[['Item','Description','Your Rate','Field Median','Variance','Action']],body:d.high,columnStyles:{2:{halign:'right'},3:{halign:'right'},4:{halign:'right'}},...AT_STYLE});
+    y=doc.lastAutoTable.finalY+8;
+  } else { doc.setFontSize(8.5);doc.setTextColor(30,127,79);doc.text('No rates materially above the field.',15,y+3);y+=12; }
+  y=pdfSectionLabel(doc,'3B: RATES BELOW THE FIELD (VERIFY COVERAGE)',y);
+  doc.setFontSize(8);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('Abnormally low rates create delivery risk. For each item below, confirm the full specified scope is covered at the tendered rate.',180),15,y+2);y+=9;
+  if(d.low.length){
+    doc.autoTable({startY:y,head:[['Item','Description','Your Rate','Field Median','Variance','Action']],body:d.low,columnStyles:{2:{halign:'right'},3:{halign:'right'},4:{halign:'right'}},...AT_STYLE});
+    y=doc.lastAutoTable.finalY+8;
+  } else { doc.setFontSize(8.5);doc.setTextColor(30,127,79);doc.text('No rates materially below the field.',15,y+3);y+=12; }
+  // Page 4: PS, prelims, OH&P
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'Section 4: Provisional Sums, Preliminaries, OH&P','Negotiation Pack · '+con.name+' · T-2026-001');
+  y=pdfSectionLabel(doc,'4A: PROVISIONAL SUMS AS ISSUED VS AS CARRIED',y);
+  doc.autoTable({startY:y,head:[['Ref','Description','Issued (AED)','Carried (AED)','Status']],body:d.ps,columnStyles:{2:{halign:'right'},3:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+4;
+  if(d.psFlag){doc.setFontSize(8);doc.setTextColor(179,54,43);doc.setFont('helvetica','bold');doc.text(doc.splitTextToSize('FLAG: '+d.psFlag,180),15,y+3);y+=14;} else {y+=4;}
+  y=pdfSectionLabel(doc,'4B: PRELIMINARIES',y);
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+  doc.text('Your preliminaries and site overhead: '+d.prelims.toFixed(1)+'% of corrected tender total.  Field range: 7.9% to 12.8%.',15,y+3);
+  doc.setTextColor(110,103,95);doc.setFontSize(8);
+  doc.text(doc.splitTextToSize(d.prelims>10.5?'Comment: your preliminaries sit at the high end of the field. Identify any scope assumed within preliminaries that is priced elsewhere by the field, or revise.':'Comment: within the field range. No action required.',180),15,y+9);y+=20;
+  y=pdfSectionLabel(doc,'4C: OVERHEAD & PROFIT',y);
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);
+  doc.text('Your stated OH&P mark-up: '+d.ohp.toFixed(1)+'%.  Field range: 5.5% to 8.0%.',15,y+3);
+  doc.setTextColor(110,103,95);doc.setFontSize(8);
+  doc.text(doc.splitTextToSize('Where OH&P is embedded within unit rates rather than stated separately, a normalisation adjustment has been applied for like-for-like comparison. State your OH&P separately in your revised submission.',180),15,y+9);y+=22;
+  y=pdfSectionLabel(doc,'SECTION 5: QUALIFICATIONS & EXCLUSIONS',y);
+  doc.autoTable({startY:y,head:[['Ref','Your Qualification','Required Action']],body:d.quals,...AT_STYLE});
+  y=doc.lastAutoTable.finalY+10;
+  y=pdfSectionLabel(doc,'SECTION 6: RESPONSE INSTRUCTIONS',y);
+  ['Submit your revised, sealed response via app.tenderbox.ae no later than 20 March 2026, 17:00 UAE time.',
+   'Respond to every section above: price, revise, substantiate, or confirm as instructed.',
+   'Reinstate all provisional sums to their issued values.',
+   'Revised submissions are sealed on receipt and opened under the same dual-approval controls as the original tender.',
+   'Revised prices will be arithmetically checked and compared like-for-like across all tenderers.'].forEach(t=>{
+    doc.setFillColor(176,97,26);doc.circle(18,y+2.5,1.3,'F');
+    doc.setFontSize(8);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+    doc.text(doc.splitTextToSize(t,172),23,y+4);y+=9;
+  });
+  const pcN=doc.getNumberOfPages();
+  for(let i=2;i<=pcN;i++){doc.setPage(i);pdfFooter(doc,i,pcN);}
+  doc.save('Tenderbox_T-2026-001_NegotiationPack_'+con.shortName+'.pdf');
+}
+
+// ── PDF: RECOMMENDATION FOR AWARD (audit-proof) ───────────────────────
+function downloadAwardRecommendationPDF(){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+  // Cover
+  doc.setFillColor(16,20,24);doc.rect(0,0,210,297,'F');doc.setFillColor(176,97,26);doc.rect(0,0,5,297,'F');
+  doc.setFontSize(26);doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.text('TENDERBOX',22,30);
+  doc.setFontSize(9);doc.setTextColor(199,123,59);doc.setFont('helvetica','bold');doc.text('RECOMMENDATION FOR AWARD',22,60);
+  doc.setFontSize(21);doc.setTextColor(255,255,255);doc.text('Marina Views Tower',22,74);doc.text('Main Construction Works',22,84);
+  doc.setFontSize(10);doc.setTextColor(138,129,119);doc.setFont('helvetica','normal');doc.text('T-2026-001 · Document Ref: T-2026-001-RFA · Revision 0 · 28 March 2026',22,96);
+  doc.setFillColor(35,40,46);doc.roundedRect(22,110,166,42,1,1,'F');
+  [['Prepared By','Rania Al Hajji, QS Lead'],['Reviewed By','Project Manager'],['Approved By','Client Representative'],['Distribution','Client Board, Project File, Audit Bundle']].forEach(([k,v],i)=>{
+    const ry=119+i*8.5;doc.setFontSize(8);doc.setTextColor(190,178,162);doc.setFont('helvetica','normal');doc.text(k,30,ry);
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.text(v,95,ry);
+  });
+  doc.setFontSize(7.5);doc.setTextColor(150,140,128);doc.text('CONFIDENTIAL: Commercial in confidence. For the named distribution only.',22,273);
+  // Page 2: recommendation + price progression
+  doc.addPage();
+  let y=pdfBrandedHeader(doc,'1. Executive Recommendation','Recommendation for Award · T-2026-001-RFA · Rev 0');
+  doc.setFillColor(16,20,24);doc.roundedRect(15,y,180,26,1,1,'F');
+  doc.setFontSize(9);doc.setTextColor(199,123,59);doc.setFont('helvetica','bold');doc.text('RECOMMENDATION',22,y+8);
+  doc.setFontSize(8.5);doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');
+  doc.text('Award to Meridian Contracting LLC at the last and final price of AED 17,985,000,',22,y+15);
+  doc.text('being 5.3% below the approved budget of AED 19,000,000, following two governed negotiation rounds.',22,y+21);
+  y+=34;
+  y=pdfSectionLabel(doc,'2. PRICE PROGRESSION (ALL TENDERERS, LIKE-FOR-LIKE)',y);
+  doc.autoTable({startY:y,
+    head:[['Rank','Tenderer','Submitted (1st)','Corrected','Post-Clarification (2nd)','Last & Final']],
+    body:[
+      ['1','Meridian Contracting LLC','18,240,000','18,252,400','18,120,000','17,985,000'],
+      ['2','Stonebridge Build Co.','19,640,000','19,631,800','19,480,000','19,395,000'],
+      ['3','Atlas Construction Group','20,450,000','20,450,000','20,065,000','19,920,000'],
+      ['4','Crescent Gulf Engineering','19,100,000','19,100,000','20,895,000','20,480,000'],
+    ],
+    columnStyles:{2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+4;
+  doc.setFontSize(7.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('Note: Crescent Gulf Engineering\'s post-clarification price includes AED 1,795,000 for item 07.001 (Lifts & Escalators), unpriced in their original submission. The corrected column reflects arithmetic checks only; rates unchanged.',180),15,y+2);y+=12;
+  y=pdfSectionLabel(doc,'3. COMPLIANCE MATRIX',y);
+  doc.autoTable({startY:y,
+    head:[['Requirement','Meridian','Crescent Gulf','Stonebridge','Atlas']],
+    body:[
+      ['Bid bond (2% of tender sum)','Yes','Yes','Yes','Yes'],
+      ['Tender validity (90 days)','Yes','Yes','Yes','Yes'],
+      ['Form of Tender signed','Yes','Yes','Yes','Yes'],
+      ['Insurances provided','Yes','Yes','Yes','Yes'],
+      ['Addendum 01 acknowledged','Yes','Yes','Yes','Yes'],
+      ['Construction programme','Yes','With response','Yes','Yes'],
+      ['Site inspection confirmed','Yes','Yes','Yes','Yes'],
+    ],
+    columnStyles:{1:{halign:'center'},2:{halign:'center'},3:{halign:'center'},4:{halign:'center'}},...AT_STYLE});
+  // Page 3: chronology
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'4. Process Chronology','Recommendation for Award · T-2026-001-RFA · Rev 0');
+  doc.setFontSize(8);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text('Every event below is recorded in the append-only, hash-chained audit log and is exportable as evidence.',15,y+2);y+=9;
+  doc.autoTable({startY:y,
+    head:[['Date','Time','Event','Reference / Status']],
+    body:[
+      ['28 Feb 2026','10:15','Tender issued to 4 pre-qualified contractors','T-2026-001'],
+      ['05 Mar 2026','09:40','Addendum 01 issued (clarifications)','ADD-01, all acknowledged'],
+      ['08 Mar 2026','17:00','Tender queries closed','12 queries answered, issued to all'],
+      ['11 Mar 2026','14:30','Submission received: Atlas Construction Group',RECEIPTS[3]+' · SEALED'],
+      ['11 Mar 2026','17:55','Submission received: Stonebridge Build Co.',RECEIPTS[2]+' · SEALED'],
+      ['12 Mar 2026','07:22','Submission received: Crescent Gulf Engineering',RECEIPTS[1]+' · SEALED'],
+      ['12 Mar 2026','08:47','Submission received: Meridian Contracting LLC',RECEIPTS[0]+' · SEALED'],
+      ['12 Mar 2026','17:00','Submission deadline. No late submissions received','Deadline enforced by platform'],
+      ['13 Mar 2026','09:00','Opening ceremony: dual approval recorded','G. Stevens + R. Al Hajji'],
+      ['13 Mar 2026','09:02','Commercial analysis complete, 4 returns','Automated at unsealing'],
+      ['13 Mar 2026','14:00','Negotiation packs issued, identical structure to all 4','Round 1'],
+      ['20 Mar 2026','17:00','Round 1 responses received, sealed, 4 of 4','All re-checked arithmetically'],
+      ['24 Mar 2026','10:00','Best and final offers requested from all 4','Round 2 (BAFO)'],
+      ['27 Mar 2026','17:00','BAFO received, sealed, 4 of 4','Opened under dual approval'],
+      ['28 Mar 2026','11:00','Recommendation for award prepared','This document'],
+    ],...AT_STYLE});
+  // Page 4: commercial summary + quals + audit + signatures
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'5. Commercial Summary and Governance','Recommendation for Award · T-2026-001-RFA · Rev 0');
+  y=pdfSectionLabel(doc,'5A: PRELIMINARIES AND OH&P COMPARISON (FINAL)',y);
+  doc.autoTable({startY:y,
+    head:[['Tenderer','Prelims % of Tender','OH&P %','Outliers Raised','Outliers Resolved','PS As Issued']],
+    body:[
+      ['Meridian Contracting LLC','8.2%','5.5%','5','5','Yes'],
+      ['Crescent Gulf Engineering','9.1%','6.0%','3','3','Reinstated'],
+      ['Stonebridge Build Co.','11.4%','7.5%','3','3','Yes'],
+      ['Atlas Construction Group','12.8%','8.0%','2','2','Reinstated'],
+    ],
+    columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'center'},4:{halign:'center'},5:{halign:'center'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+8;
+  y=pdfSectionLabel(doc,'5B: QUALIFICATIONS REGISTER (CLOSE-OUT)',y);
+  doc.autoTable({startY:y,
+    head:[['Tenderer','Qualification','Status']],
+    body:[
+      ['Meridian Contracting LLC','Dewatering assumption','Withdrawn 20 Mar'],
+      ['Crescent Gulf Engineering','Lifts exclusion','Withdrawn, item priced 20 Mar'],
+      ['Stonebridge Build Co.','Steel fluctuation rider','Withdrawn 20 Mar'],
+      ['Atlas Construction Group','Alternative HVAC manufacturer','Compliance confirmed 20 Mar'],
+    ],...AT_STYLE});
+  y=doc.lastAutoTable.finalY+8;
+  y=pdfSectionLabel(doc,'5C: FAIR PROCESS AND AUDIT STATEMENT',y);
+  doc.setFontSize(8);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('All four tenderers received identically structured negotiation packs with identical response deadlines. All submissions and resubmissions were sealed at database level on receipt and unreadable by any user or role until dual-approval opening. Every event in this process is recorded in an append-only, hash-chained audit log. The complete evidence bundle for this tender is exportable as: Audit Bundle TB-T-2026-001-AB, export hash e01d4a92...6b39.',180),15,y+3);y+=24;
+  y=pdfSectionLabel(doc,'6. SIGNATURES',y);
+  [['Prepared by (QS Lead)','Rania Al Hajji'],['Reviewed by (Project Manager)',''],['Approved by (Client Representative)','']].forEach(([role,name])=>{
+    doc.setFontSize(8.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');doc.text(role,15,y+5);
+    doc.setDrawColor(16,20,24);doc.line(85,y+6,150,y+6);doc.line(160,y+6,195,y+6);
+    doc.setFontSize(7);doc.setTextColor(138,129,119);doc.text(name||'Signature',85,y+10);doc.text('Date',160,y+10);
+    y+=16;
+  });
+  const pcA=doc.getNumberOfPages();
+  for(let i=2;i<=pcA;i++){doc.setPage(i);pdfFooter(doc,i,pcA);}
+  doc.save('Tenderbox_T-2026-001_Recommendation_For_Award.pdf');
+}
+
 function Badge({color,children,style={}}) {
   const colors = {
     blue:{bg:'rgba(176,97,26,.1)',text:'#9A5416',border:'rgba(176,97,26,.2)'},
@@ -1108,7 +1344,8 @@ function AnalysisView({setPage}) {
         sub="Marina Views — Main Works · Opened 13 Mar 2026, 09:00"
         actions={[
           <Btn key="e" variant="outline">⬇ Export Excel</Btn>,
-          <Btn key="p" onClick={downloadAnalysisPDF}>⬇ Award Pack PDF</Btn>
+          <Btn key="a" variant="outline" onClick={downloadAnalysisPDF}>⬇ Analysis Report</Btn>,
+          <Btn key="p" onClick={downloadAwardRecommendationPDF}>⬇ Recommendation for Award</Btn>
         ]}
       />
       {/* Opening-day proof strip */}
@@ -1135,12 +1372,12 @@ function AnalysisView({setPage}) {
 
       {/* Tabs */}
       <div style={{display:'flex',gap:4,borderBottom:`1px solid ${C.gray200}`,marginBottom:20}}>
-        {['matrix','negotiation','risks'].map(t=>(
+        {['matrix','negotiation','risks','packs'].map(t=>(
           <div key={t} onClick={()=>setActiveTab(t)} style={{
             padding:'8px 16px',fontSize:13,fontWeight:activeTab===t?600:400,cursor:'pointer',
             color:activeTab===t?C.blue:C.gray500,borderBottom:`2px solid ${activeTab===t?C.blue:'transparent'}`,
             textTransform:'capitalize',marginBottom:-1,transition:'all .15s'
-          }}>{t==='matrix'?'Comparison Matrix':t==='negotiation'?'Negotiation Schedules':'Risk Flags'}</div>
+          }}>{t==='matrix'?'Comparison Matrix':t==='negotiation'?'Negotiation Schedules':t==='risks'?'Risk Flags':'Negotiation Packs'}</div>
         ))}
       </div>
 
@@ -1277,10 +1514,41 @@ function AnalysisView({setPage}) {
                     <span style={{color:C.gray400}}>Impact: <strong style={{color:r.sev==='high'?C.red:C.gold}}>{r.val}</strong></span>
                   </div>
                 </div>
-                <Btn variant="outline" style={{flexShrink:0,fontSize:11,padding:'6px 12px'}}>Raise Query</Btn>
               </div>
             </Card>
           ))}
+          <div style={{padding:'12px 14px',background:C.gray50,border:`1px solid ${C.gray200}`,fontSize:12,color:C.gray500}}>
+            These flags are not chased individually. Every flag is compiled into the relevant tenderer's standard negotiation pack, so all tenderers respond to the same structure on the same deadline. See the Negotiation Packs tab.
+          </div>
+        </div>
+      )}
+
+      {activeTab==='packs' && (
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <Card style={{background:C.navy,border:'none'}}>
+            <div style={{fontSize:12,fontWeight:700,color:C.sky,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>Round 1 · Standard Negotiation Packs</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,.85)',lineHeight:1.65,marginBottom:10}}>
+              Every tenderer receives the same standard pack and the same response window. That is the point: everyone gets a fair chance. Each pack covers the arithmetic check, missing items, high and low rate outliers, provisional sum changes, preliminaries as a percentage of tender, OH&P mark-up, and qualifications to withdraw.
+            </div>
+            <div style={{fontSize:12,fontWeight:600,color:C.sky}}>Responses due: 20 March 2026, 17:00 UAE time · Sealed resubmission via the platform</div>
+          </Card>
+          <Card style={{padding:0,overflow:'hidden'}}>
+            <div style={{display:'grid',gridTemplateColumns:'2fr 120px 110px 110px 160px',padding:'12px 20px',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+              <div>Tenderer</div><div style={{textAlign:'right'}}>Items Flagged</div><div style={{textAlign:'right'}}>Prelims %</div><div style={{textAlign:'right'}}>OH&P %</div><div style={{textAlign:'right'}}>Pack</div>
+            </div>
+            {CONTRACTORS_BIDDING.map((c,i)=>(
+              <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 120px 110px 110px 160px',alignItems:'center',padding:'13px 20px',borderBottom:i<3?`1px solid ${C.gray100}`:'none'}}>
+                <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{c.name}</div>
+                <div style={{textAlign:'right',fontSize:13,fontWeight:700,color:NEG_DATA[i].flags>=8?C.red:C.navy,fontVariantNumeric:'tabular-nums'}}>{NEG_DATA[i].flags}</div>
+                <div style={{textAlign:'right',fontSize:13,color:NEG_DATA[i].prelims>10.5?C.gold:C.gray700,fontVariantNumeric:'tabular-nums'}}>{NEG_DATA[i].prelims.toFixed(1)}%</div>
+                <div style={{textAlign:'right',fontSize:13,color:C.gray700,fontVariantNumeric:'tabular-nums'}}>{NEG_DATA[i].ohp.toFixed(1)}%</div>
+                <div style={{textAlign:'right'}}><Btn variant="outline" style={{fontSize:11,padding:'6px 12px'}} onClick={()=>downloadNegotiationPack(i)}>⬇ Download Pack</Btn></div>
+              </div>
+            ))}
+          </Card>
+          <div style={{padding:'12px 14px',background:C.gray50,border:`1px solid ${C.gray200}`,fontSize:12,color:C.gray500}}>
+            Pack issue and every download are recorded in the audit log. Identical structure, identical deadline, and sealed responses are what make the final Recommendation for Award defensible.
+          </div>
         </div>
       )}
     </div>
