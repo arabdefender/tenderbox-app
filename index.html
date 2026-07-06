@@ -655,13 +655,11 @@ function Dashboard({setPage, setActiveTender}) {
                 <div style={{fontSize:12,color:C.gray400,marginTop:2}}>{t.id} · {t.deadline}</div>
               </div>
             </div>
-            <div style={{display:'flex',alignItems:'center',gap:16}}>
-              <div style={{textAlign:'right'}}>
-                <div style={{fontSize:13,fontWeight:700,color:C.navy}}>{t.value}</div>
-                <div style={{fontSize:11,color:C.gray400}}>{t.contractors} contractors</div>
-              </div>
-              <Badge color={t.statusColor}>{t.statusLabel}</Badge>
-              <span style={{color:C.gray400,fontSize:16}}>›</span>
+            <div style={{display:'grid',gridTemplateColumns:'110px 110px 150px 16px',alignItems:'center',gap:0}}>
+              <div style={{textAlign:'right',fontSize:13,fontWeight:700,color:C.navy,fontVariantNumeric:'tabular-nums'}}>{t.value}</div>
+              <div style={{textAlign:'right',fontSize:11,color:C.gray400,fontVariantNumeric:'tabular-nums',paddingRight:4}}>{t.contractors} contractors</div>
+              <div style={{textAlign:'right'}}><Badge color={t.statusColor}>{t.statusLabel}</Badge></div>
+              <span style={{color:C.gray400,fontSize:16,textAlign:'right'}}>›</span>
             </div>
           </div>
         ))}
@@ -896,6 +894,75 @@ function TenderDetail({tender, setPage}) {
             </Card>
           </div>
         </div>
+      )}
+      {tab==='contractors' && (
+        <Card>
+          <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Invited Contractors</div>
+          <div style={{display:'grid',gridTemplateColumns:'2.2fr 90px 150px 130px 130px',padding:'8px 0',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+            <div>Contractor</div><div style={{textAlign:'center'}}>Grade</div><div>Discipline</div><div style={{textAlign:'right'}}>Invited</div><div style={{textAlign:'right'}}>Status</div>
+          </div>
+          {[
+            ['Meridian Contracting LLC','A','Main Contractor','28 Feb 2026','Submitted'],
+            ['Crescent Gulf Engineering','A','Main Contractor','28 Feb 2026','Submitted'],
+            ['Stonebridge Build Co.','B','Main Contractor','28 Feb 2026','Submitted'],
+            ['Atlas Construction Group','A','Main Contractor','28 Feb 2026','Submitted'],
+          ].map(([name,grade,disc,inv,st],i)=>(
+            <div key={i} style={{display:'grid',gridTemplateColumns:'2.2fr 90px 150px 130px 130px',alignItems:'center',padding:'12px 0',borderBottom:i<3?`1px solid ${C.gray100}`:'none'}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{name}</div>
+              <div style={{textAlign:'center'}}><Badge color={grade==='A'?'blue':'teal'}>Grade {grade}</Badge></div>
+              <div style={{fontSize:12,color:C.gray500}}>{disc}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{inv}</div>
+              <div style={{textAlign:'right'}}><Badge color="green">{st}</Badge></div>
+            </div>
+          ))}
+          <div style={{marginTop:14,fontSize:12,color:C.gray400}}>4 of 4 invited contractors submitted before the deadline. No late submissions were accepted.</div>
+        </Card>
+      )}
+      {tab==='documents' && (
+        <Card>
+          <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Tender Documents Issued</div>
+          <div style={{display:'grid',gridTemplateColumns:'2.4fr 110px 90px 130px 120px',padding:'8px 0',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+            <div>Document</div><div>Type</div><div style={{textAlign:'right'}}>Size</div><div style={{textAlign:'right'}}>Issued</div><div style={{textAlign:'right'}}>Action</div>
+          </div>
+          {[
+            ['Tender Document — Instructions & Conditions','PDF','1.2 MB','28 Feb 2026',true],
+            ['Bill of Quantities — Main Works','Excel','842 KB','28 Feb 2026',false],
+            ['Drawings Package — Rev C','ZIP','48 MB','28 Feb 2026',false],
+            ['Addendum 01 — Clarifications','PDF','214 KB','05 Mar 2026',false],
+          ].map(([name,type,size,issued,live],i)=>(
+            <div key={i} style={{display:'grid',gridTemplateColumns:'2.4fr 110px 90px 130px 120px',alignItems:'center',padding:'12px 0',borderBottom:i<3?`1px solid ${C.gray100}`:'none'}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{name}</div>
+              <div style={{fontSize:12,color:C.gray500}}>{type}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{size}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{issued}</div>
+              <div style={{textAlign:'right'}}>{live
+                ? <Btn variant="outline" style={{fontSize:11,padding:'5px 10px'}} onClick={downloadTenderPDF}>⬇ Download</Btn>
+                : <Btn variant="outline" style={{fontSize:11,padding:'5px 10px',opacity:.55,cursor:'default'}}>⬇ Download</Btn>}
+              </div>
+            </div>
+          ))}
+          <div style={{marginTop:14,fontSize:12,color:C.gray400}}>Every download by every contractor is recorded in the audit log with user, timestamp, and document version.</div>
+        </Card>
+      )}
+      {tab==='submissions' && (
+        <Card>
+          <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Sealed Submissions</div>
+          <div style={{display:'grid',gridTemplateColumns:'2.2fr 150px 90px 170px 110px',padding:'8px 0',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+            <div>Contractor</div><div style={{textAlign:'right'}}>Submitted</div><div style={{textAlign:'right'}}>Docs</div><div style={{textAlign:'right'}}>Receipt</div><div style={{textAlign:'right'}}>Status</div>
+          </div>
+          {submissions.map((s,i)=>(
+            <div key={i} style={{display:'grid',gridTemplateColumns:'2.2fr 150px 90px 170px 110px',alignItems:'center',padding:'12px 0',borderBottom:i<submissions.length-1?`1px solid ${C.gray100}`:'none'}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{s.contractor}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{s.submitted}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{s.docs}</div>
+              <div style={{fontSize:11,color:C.gray400,textAlign:'right',fontFamily:'monospace'}}>RCT-{2841+i*97}-{['7F2A','9C41','3B08','E65D'][i]}</div>
+              <div style={{textAlign:'right'}}><Badge color="navy">🔒 Sealed</Badge></div>
+            </div>
+          ))}
+          <div style={{marginTop:14,padding:'12px 14px',background:C.gray50,border:`1px solid ${C.gray200}`,fontSize:12,color:C.gray500}}>
+            Bid values are sealed at database level and cannot be read by any user or role, including the platform operator, until the opening ceremony records both committee approvals.
+          </div>
+        </Card>
       )}
     </div>
   );
