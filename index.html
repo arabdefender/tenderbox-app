@@ -50,25 +50,26 @@ const DEMO_CONTRACTORS = [
 ];
 
 const BOQ_ITEMS = [
-  {code:'01.001',desc:'Excavation & Earthworks',unit:'m³',qty:4200,rates:[38,42,44,39],budget:168000},
-  {code:'02.001',desc:'RC Foundations & Raft Slab',unit:'m²',qty:1800,rates:[285,290,310,288],budget:522000},
-  {code:'02.002',desc:'RC Columns & Shear Walls',unit:'m³',qty:620,rates:[1850,1920,2100,1870],budget:1178000},
-  {code:'02.003',desc:'RC Beams & Slabs',unit:'m³',qty:980,rates:[1650,1700,1820,1675],budget:1646000},
-  {code:'03.001',desc:'External Block & Plaster',unit:'m²',qty:3200,rates:[82,88,95,84],budget:272000},
-  {code:'03.002',desc:'Internal Plaster & Skim',unit:'m²',qty:8600,rates:[45,48,52,46],budget:402800},
-  {code:'04.001',desc:'Chilled Water System (HVAC)',unit:'sum',qty:1,rates:[2100000,2250000,2400000,2180000],budget:2100000},
-  {code:'04.002',desc:'Electrical HV/LV Works',unit:'sum',qty:1,rates:[1450000,1520000,1380000,1490000],budget:1500000},
-  {code:'04.003',desc:'Plumbing & Drainage',unit:'sum',qty:1,rates:[680000,720000,760000,695000],budget:700000},
-  {code:'05.001',desc:'Porcelain Floor Tiling (Common)',unit:'m²',qty:2800,rates:[125,130,145,128],budget:364000},
-  {code:'05.002',desc:'Marble Flooring (Lobby)',unit:'m²',qty:340,rates:[380,395,420,385],budget:133000},
-  {code:'05.003',desc:'Painted Gypsum Ceiling',unit:'m²',qty:5200,rates:[68,72,78,70],budget:364000},
-  {code:'06.001',desc:'Aluminium Curtain Wall & Glazing',unit:'m²',qty:1200,rates:[680,720,780,695],budget:852000},
-  {code:'06.002',desc:'Entrance Feature Canopy',unit:'sum',qty:1,rates:[185000,195000,175000,190000],budget:190000},
+  {code:'01.001',desc:'Excavation & Earthworks',unit:'m³',qty:6800,rates:[40,56,38,39],budget:269000},
+  {code:'02.001',desc:'RC Foundations & Raft Slab',unit:'m²',qty:2600,rates:[300,370,288,290],budget:767000},
+  {code:'02.002',desc:'RC Columns & Shear Walls',unit:'m³',qty:900,rates:[1850,2050,2100,1870],budget:1764000},
+  {code:'02.003',desc:'RC Beams & Slabs',unit:'m³',qty:1450,rates:[1700,2150,1820,1675],budget:2552000},
+  {code:'03.001',desc:'External Block & Plaster',unit:'m²',qty:4800,rates:[82,88,95,84],budget:413000},
+  {code:'03.002',desc:'Internal Plaster & Skim',unit:'m²',qty:12500,rates:[45,62,46,48],budget:588000},
+  {code:'04.001',desc:'Chilled Water System (HVAC)',unit:'sum',qty:1,rates:[2050000,2080000,2120000,2400000],budget:2100000},
+  {code:'04.002',desc:'Electrical HV/LV Works',unit:'sum',qty:1,rates:[1450000,1520000,1380000,1490000],budget:1470000},
+  {code:'04.003',desc:'Plumbing & Drainage',unit:'sum',qty:1,rates:[940000,1080000,830000,920000],budget:930000},
+  {code:'05.001',desc:'Porcelain Floor Tiling (Common)',unit:'m²',qty:4200,rates:[125,130,128,145],budget:542000},
+  {code:'05.002',desc:'Marble Flooring (Lobby)',unit:'m²',qty:520,rates:[420,560,395,385],budget:212000},
+  {code:'05.003',desc:'Painted Gypsum Ceiling',unit:'m²',qty:7800,rates:[72,94,68,70],budget:554000},
+  {code:'06.001',desc:'Aluminium Curtain Wall & Glazing',unit:'m²',qty:1800,rates:[680,720,780,695],budget:1274000},
+  {code:'06.002',desc:'Entrance Feature Canopy',unit:'sum',qty:1,rates:[185000,210000,175000,190000],budget:188000},
   {code:'07.001',desc:'Lifts & Escalators (8 units)',unit:'sum',qty:1,rates:[1800000,0,1950000,1850000],budget:1850000},
-  {code:'08.001',desc:'Landscaping & External Works',unit:'sum',qty:1,rates:[420000,445000,480000,435000],budget:450000},
-  {code:'09.001',desc:'Preliminaries & Site Overhead',unit:'sum',qty:1,rates:[980000,1020000,1100000,1000000],budget:1000000},
-  {code:'10.001',desc:"Contractor's Risk & Profit",unit:'%',qty:1,rates:[850000,910000,780000,840000],budget:900000},
+  {code:'08.001',desc:'Landscaping & External Works',unit:'sum',qty:1,rates:[680000,840000,590000,650000],budget:665000},
+  {code:'09.001',desc:'Preliminaries & Site Overhead',unit:'sum',qty:1,rates:[1496000,1738000,2239000,2618000],budget:1900000},
+  {code:'10.001',desc:"Contractor's Risk & Profit",unit:'sum',qty:1,rates:[971900,1262900,1111400,1591650],budget:1200000},
 ];
+// Line items sum exactly to: 18,240,000 / 19,100,000 / 19,640,000 / 20,450,000
 
 const CONTRACTORS_BIDDING = [
   {id:1,name:'Meridian Contracting LLC',shortName:'Meridian'},
@@ -426,30 +427,30 @@ function downloadAnalysisPDF(){
 // ── NEGOTIATION PACK DATA (per contractor, identical structure) ────────
 const RECEIPTS = ['RCT-2841-7F2A','RCT-2938-9C41','RCT-3035-3B08','RCT-3132-E65D'];
 const NEG_DATA = [
-  { flags:7, prelims:8.2, ohp:5.5, arithmetic:{delta:'+12,400',corrected:'18,252,400',rows:[['02.002','RC Columns: extension error, qty x rate','+9,150'],['05.001','Floor tiling: page total rounding','+3,250']]},
+  { flags:7, prelims:8.2, ohp:5.3, arithmetic:{delta:'+12,400',corrected:'18,252,400',rows:[['02.002','RC Columns: extension error, qty x rate','+9,150'],['05.001','Floor tiling: page total rounding','+3,250']]},
     missing:[['03.003','Movement joints to blockwork','m','420','18.50','7,770'],['05.004','Porcelain skirting to corridors','m','1,150','32.00','36,800']],
     high:[],
-    low:[['02.002','RC Columns & Shear Walls','1,850/m³','1,935','−4.4%','Confirm scope coverage at this rate'],['04.002','Electrical HV/LV Works','1,450,000','1,470,000','−1.4%','Confirm cable specification allowed'],['06.001','Curtain Wall & Glazing','680/m²','708','−4.0%','Confirm DGU Low-E specification']],
+    low:[['02.002','RC Columns & Shear Walls','1,850/m³','1,960','−5.6%','Confirm scope coverage at this rate'],['04.002','Electrical HV/LV Works','1,450,000','1,470,000','−1.4%','Confirm cable specification allowed'],['06.001','Curtain Wall & Glazing','680/m²','708','−3.9%','Confirm DGU Low-E specification']],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','500,000','Unchanged']],
     psFlag:null,
     quals:[['Q1','Dewatering assumed not required','Withdraw, or price as a fixed inclusion']] },
-  { flags:9, prelims:9.1, ohp:6.0, arithmetic:{delta:'0',corrected:'19,100,000',rows:[['—','No arithmetic errors identified','0']]},
-    missing:[['07.001','Lifts & Escalators (8 units)','sum','1','1,795,000','1,795,000+']],
-    high:[['03.001','External Block & Plaster','88/m²','84.7','+3.9%','Substantiate or revise']],
-    low:[['04.002','Electrical HV/LV Works','1,520,000','1,470,000','+3.4%','No action, within tolerance']],
+  { flags:9, prelims:9.1, ohp:6.6, arithmetic:{delta:'0',corrected:'19,100,000',rows:[['—','No arithmetic errors identified','0']]},
+    missing:[['07.001','Lifts & Escalators (8 units)','sum','1','1,850,000','1,850,000+']],
+    high:[['02.003','RC Beams & Slabs','2,150/m³','1,760','+22.2%','Substantiate or revise'],['03.002','Internal Plaster & Skim','62/m²','47','+31.9%','Substantiate or revise'],['04.003','Plumbing & Drainage','1,080,000','930,000','+16.1%','Substantiate or revise']],
+    low:[],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','260,000','REDUCED by 240,000']],
     psFlag:'PS-02 Contingency has been reduced from the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
     quals:[['Q1','Construction programme not submitted','Mandatory item: submit with your response'],['Q2','Lifts excluded from offer','Unacceptable: price item 07.001 or confirm inclusion']] },
-  { flags:6, prelims:11.4, ohp:7.5, arithmetic:{delta:'−8,200',corrected:'19,631,800',rows:[['06.001','Curtain wall: duplicated carry-forward','−8,200']]},
+  { flags:6, prelims:11.4, ohp:5.7, arithmetic:{delta:'−8,200',corrected:'19,631,800',rows:[['06.001','Curtain wall: duplicated carry-forward','−8,200']]},
     missing:[],
-    high:[['02.002','RC Columns & Shear Walls','2,100/m³','1,880','+11.7%','Substantiate or revise'],['02.003','RC Beams & Slabs','1,820/m³','1,688','+7.8%','Substantiate or revise']],
-    low:[['06.002','Entrance Feature Canopy','175,000','187,500','−6.7%','Confirm scope coverage']],
+    high:[['02.002','RC Columns & Shear Walls','2,100/m³','1,960','+7.1%','Substantiate or revise']],
+    low:[['06.002','Entrance Feature Canopy','175,000','187,500','−6.7%','Confirm scope coverage'],['04.002','Electrical HV/LV Works','1,380,000','1,470,000','−6.1%','Confirm scope coverage']],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','500,000','Unchanged']],
     psFlag:null,
     quals:[['Q1','Steel price fluctuation rider','Withdraw: lump sum contract, no fluctuation provisions']] },
-  { flags:8, prelims:12.8, ohp:8.0, arithmetic:{delta:'0',corrected:'20,450,000',rows:[['—','No arithmetic errors identified','0']]},
+  { flags:8, prelims:12.8, ohp:7.8, arithmetic:{delta:'0',corrected:'20,450,000',rows:[['—','No arithmetic errors identified','0']]},
     missing:[],
-    high:[['04.001','Chilled Water System (HVAC)','2,400,000','2,100,000','+14.3%','Substantiate or revise: ~300,000 above median'],['05.001','Porcelain Floor Tiling','145/m²','127.7','+13.5%','Substantiate or revise']],
+    high:[['04.001','Chilled Water System (HVAC)','2,400,000','2,100,000','+14.3%','Substantiate or revise: ~300,000 above median'],['05.001','Porcelain Floor Tiling','145/m²','129','+12.4%','Substantiate or revise']],
     low:[],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','650,000','INCREASED by 150,000']],
     psFlag:'PS-02 Contingency has been increased above the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
@@ -520,12 +521,12 @@ function downloadNegotiationPack(ci){
   if(d.psFlag){doc.setFontSize(8);doc.setTextColor(179,54,43);doc.setFont('helvetica','bold');doc.text(doc.splitTextToSize('FLAG: '+d.psFlag,180),15,y+3);y+=14;} else {y+=4;}
   y=pdfSectionLabel(doc,'4B: PRELIMINARIES',y);
   doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
-  doc.text('Your preliminaries and site overhead: '+d.prelims.toFixed(1)+'% of corrected tender total.  Field range: 7.9% to 12.8%.',15,y+3);
+  doc.text('Your preliminaries and site overhead: '+d.prelims.toFixed(1)+'% of corrected tender total.  Field range: 8.2% to 12.8%.',15,y+3);
   doc.setTextColor(110,103,95);doc.setFontSize(8);
   doc.text(doc.splitTextToSize(d.prelims>10.5?'Comment: your preliminaries sit at the high end of the field. Identify any scope assumed within preliminaries that is priced elsewhere by the field, or revise.':'Comment: within the field range. No action required.',180),15,y+9);y+=20;
   y=pdfSectionLabel(doc,'4C: OVERHEAD & PROFIT',y);
   doc.setFontSize(8.5);doc.setTextColor(16,20,24);
-  doc.text('Your stated OH&P mark-up: '+d.ohp.toFixed(1)+'%.  Field range: 5.5% to 8.0%.',15,y+3);
+  doc.text('Your stated OH&P mark-up: '+d.ohp.toFixed(1)+'%.  Field range: 5.3% to 7.8%.',15,y+3);
   doc.setTextColor(110,103,95);doc.setFontSize(8);
   doc.text(doc.splitTextToSize('Where OH&P is embedded within unit rates rather than stated separately, a normalisation adjustment has been applied for like-for-like comparison. State your OH&P separately in your revised submission.',180),15,y+9);y+=22;
   y=pdfSectionLabel(doc,'SECTION 5: QUALIFICATIONS & EXCLUSIONS',y);
@@ -627,10 +628,10 @@ function downloadAwardRecommendationPDF(){
   doc.autoTable({startY:y,
     head:[['Tenderer','Prelims % of Tender','OH&P %','Outliers Raised','Outliers Resolved','PS As Issued']],
     body:[
-      ['Meridian Contracting LLC','8.2%','5.5%','5','5','Yes'],
-      ['Crescent Gulf Engineering','9.1%','6.0%','3','3','Reinstated'],
-      ['Stonebridge Build Co.','11.4%','7.5%','3','3','Yes'],
-      ['Atlas Construction Group','12.8%','8.0%','2','2','Reinstated'],
+      ['Meridian Contracting LLC','8.2%','5.3%','5','5','Yes'],
+      ['Crescent Gulf Engineering','9.1%','6.6%','4','4','Reinstated'],
+      ['Stonebridge Build Co.','11.4%','5.7%','3','3','Yes'],
+      ['Atlas Construction Group','12.8%','7.8%','2','2','Reinstated'],
     ],
     columnStyles:{1:{halign:'right'},2:{halign:'right'},3:{halign:'center'},4:{halign:'center'},5:{halign:'center'}},...AT_STYLE});
   y=doc.lastAutoTable.finalY+8;
@@ -850,7 +851,7 @@ function Dashboard({setPage, setActiveTender}) {
     {label:'Awards Pending',val:'1',color:C.navy,icon:'🏆'},
   ];
   const tenders = [
-    {id:'T-2026-001',name:'Marina Views — Main Works',value:'AED 19.2M',contractors:4,status:'open',statusColor:'green',statusLabel:'Analysis Ready',deadline:'Opened 09:00 · Analysis ready 09:02'},
+    {id:'T-2026-001',name:'Marina Views — Main Works',value:'AED 19.0M',contractors:4,status:'open',statusColor:'green',statusLabel:'Analysis Ready',deadline:'Opened 09:00 · Analysis ready 09:02'},
     {id:'T-2026-002',name:'Downtown Office Tower — MEP',value:'AED 4.8M',contractors:3,status:'active',statusColor:'blue',statusLabel:'Submissions Open',deadline:'Closes 15 Mar 2026'},
     {id:'T-2026-003',name:'Al Barsha Residences — Fit-out',value:'AED 2.1M',contractors:5,status:'draft',statusColor:'gray',statusLabel:'Draft',deadline:'Not sent yet'},
   ];
@@ -1498,7 +1499,7 @@ function AnalysisView({setPage}) {
           {[
             {sev:'high',title:'Missing rate: Lifts & Escalators',detail:'Crescent Gulf Engineering submitted no rate for item 07.001 (Lifts & Escalators, 8 units). This is a significant scope gap. Clarification required before award.',contractor:'Crescent Gulf Engineering',val:'AED 1,800,000+ exposure'},
             {sev:'medium',title:'HVAC rate outlier: Atlas Construction Group',detail:'Atlas Construction Group HVAC rate (AED 2,400,000) is 14.3% above the median. Investigate whether this reflects a scope difference or pricing error.',contractor:'Atlas Construction Group',val:'AED 300,000 above median'},
-            {sev:'medium',title:'Large spread on RC Columns: 13.5%',detail:'Rate spread for RC Columns & Shear Walls exceeds 10%. Meridian at AED 1,850 vs Stonebridge at AED 2,100/m³. Verify specification assumptions are consistent.',contractor:'All contractors',val:'AED 155,000 total spread'},
+            {sev:'medium',title:'Large spread on RC Columns: 13.5%',detail:'Rate spread for RC Columns & Shear Walls exceeds 10%. Meridian at AED 1,850 vs Stonebridge at AED 2,100/m³. Verify specification assumptions are consistent.',contractor:'All contractors',val:'AED 225,000 total spread'},
             {sev:'low',title:'Programme submitted by 3 of 4 contractors',detail:"Crescent Gulf Engineering did not submit a construction programme. This was a 'required' submission item. Request before advancing to award.",contractor:'Crescent Gulf Engineering',val:'Compliance gap'},
           ].map((r,i)=>(
             <Card key={i} style={{borderLeft:`3px solid ${r.sev==='high'?C.red:r.sev==='medium'?C.gold:C.blue}`,padding:'16px 20px'}}>
