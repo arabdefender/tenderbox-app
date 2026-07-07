@@ -66,41 +66,121 @@ const PQQ_DATA = {
   9:{licence:'CN-1402517',licenceExp:{v:'30 May 2026',flag:'soon'},insurance:{v:'18 Jun 2026',flag:'soon'},financial:'AED 1-10M fee income band',projects:11,trir:'0.35',qms:'ISO 9001:2015',approved:'Under review',review:'Pending PQQ approval'},
 };
 
+// POMI-structured bill, 86 line items across 18 sections (A to R plus PS and DW).
+// Provisional sums (PS) and dayworks (DW) are client-directed and carried at identical
+// values by all four tenderers, so they add equally to every bid.
 const BOQ_ITEMS = [
-  {code:'01.001',desc:'Excavation & Earthworks',unit:'m³',qty:6800,rates:[40,56,38,39],budget:269000},
-  {code:'02.001',desc:'RC Foundations & Raft Slab',unit:'m²',qty:2600,rates:[300,370,288,290],budget:767000},
-  {code:'02.002',desc:'RC Columns & Shear Walls',unit:'m³',qty:900,rates:[1850,2050,2100,1870],budget:1764000},
-  {code:'02.003',desc:'RC Beams & Slabs',unit:'m³',qty:1450,rates:[1700,2150,1820,1675],budget:2552000},
-  {code:'03.001',desc:'External Block & Plaster',unit:'m²',qty:4800,rates:[82,88,95,84],budget:413000},
-  {code:'03.002',desc:'Internal Plaster & Skim',unit:'m²',qty:12500,rates:[45,62,46,48],budget:588000},
-  {code:'04.001',desc:'Chilled Water System (HVAC)',unit:'sum',qty:1,rates:[2050000,2080000,2120000,2400000],budget:2100000},
-  {code:'04.002',desc:'Electrical HV/LV Works',unit:'sum',qty:1,rates:[1450000,1520000,1380000,1490000],budget:1470000},
-  {code:'04.003',desc:'Plumbing & Drainage',unit:'sum',qty:1,rates:[940000,1080000,830000,920000],budget:930000},
-  {code:'05.001',desc:'Porcelain Floor Tiling (Common)',unit:'m²',qty:4200,rates:[125,130,128,145],budget:542000},
-  {code:'05.002',desc:'Marble Flooring (Lobby)',unit:'m²',qty:520,rates:[420,560,395,385],budget:212000},
-  {code:'05.003',desc:'Painted Gypsum Ceiling',unit:'m²',qty:7800,rates:[72,94,68,70],budget:554000},
-  {code:'06.001',desc:'Aluminium Curtain Wall & Glazing',unit:'m²',qty:1800,rates:[680,720,780,695],budget:1274000},
-  {code:'06.002',desc:'Entrance Feature Canopy',unit:'sum',qty:1,rates:[185000,210000,175000,190000],budget:188000},
-  {code:'07.001',desc:'Lifts & Escalators (8 units)',unit:'sum',qty:1,rates:[1800000,0,1950000,1850000],budget:1850000},
-  {code:'08.001',desc:'Landscaping & External Works',unit:'sum',qty:1,rates:[680000,840000,590000,650000],budget:665000},
-  {code:'09.001',desc:'Preliminaries & Site Overhead',unit:'sum',qty:1,rates:[1496000,1738000,2239000,2618000],budget:1900000},
-  {code:'10.001',desc:"Contractor's Risk & Profit",unit:'sum',qty:1,rates:[971900,1262900,1111400,1591650],budget:1200000},
+  {code:'A.01',desc:'Preliminaries and site establishment',unit:'sum',qty:1,rates:[1496000,1738000,2239000,2618000],budget:1990000},
+  {code:'A.02',desc:'Mobilisation and demobilisation',unit:'sum',qty:1,rates:[65000,82000,62000,63000],budget:64000},
+  {code:'A.03',desc:'Temporary site offices, welfare and hoarding',unit:'sum',qty:1,rates:[48000,61000,45000,46000],budget:47000},
+  {code:'A.04',desc:'Temporary water and power for the works',unit:'sum',qty:1,rates:[36000,46000,34000,35000],budget:36000},
+  {code:'A.05',desc:'Testing, sampling and material approvals',unit:'sum',qty:1,rates:[26000,34000,25000,25000],budget:26000},
+  {code:'A.06',desc:'Progress records, signboards and as-built documentation',unit:'sum',qty:1,rates:[15000,20000,14000,14500],budget:15000},
+  {code:'A.07',desc:'Traffic management and pedestrian protection',unit:'sum',qty:1,rates:[18000,24000,17000,17500],budget:18000},
+  {code:'A.08',desc:'Attendance on client-appointed specialists',unit:'sum',qty:1,rates:[14000,19000,13500,13000],budget:14000},
+  {code:'A.09',desc:"Contractor's risk and OH&P allowance",unit:'sum',qty:1,rates:[959850,1271470,1171885,1604240],budget:1220000},
+  {code:'B.01',desc:'Site clearance including grubbing up and disposal',unit:'m²',qty:5400,rates:[4,5,4,4],budget:22000},
+  {code:'B.02',desc:'Bulk excavation in all materials including disposal off site',unit:'m³',qty:3600,rates:[40,56,38,39],budget:142000},
+  {code:'B.03',desc:'Engineered backfill compacted in 300 mm layers',unit:'m³',qty:1600,rates:[26,34,25,25],budget:41000},
+  {code:'B.04',desc:'Shoring and dewatering to basement excavation',unit:'sum',qty:1,rates:[58000,76000,70000,60000],budget:65000},
+  {code:'B.05',desc:'Anti-termite soil treatment to approved specification',unit:'m²',qty:2100,rates:[7,9,7,7],budget:14500},
+  {code:'B.06',desc:'External paving, kerbs and hard landscaping',unit:'m²',qty:520,rates:[95,122,90,92],budget:49000},
+  {code:'B.07',desc:'Soft landscaping and irrigation to podium deck',unit:'sum',qty:1,rates:[52000,68000,48000,50000],budget:51000},
+  {code:'C.01',desc:'Plain concrete grade C20/15 in blinding beds, 75 mm thick',unit:'m²',qty:1400,rates:[24,31,23,23],budget:33000},
+  {code:'C.02',desc:'Vibrated RC grade C40/20 in raft foundation; formwork and reinforcement included',unit:'m³',qty:550,rates:[310,380,295,300],budget:168000},
+  {code:'C.03',desc:'Vibrated RC grade C40/20 in columns and shear walls; formwork and reinforcement included',unit:'m³',qty:900,rates:[1850,2050,2100,1870],budget:1765000},
+  {code:'C.04',desc:'Vibrated RC grade C40/20 in beams and suspended slabs; formwork and reinforcement included',unit:'m³',qty:900,rates:[1700,2150,1820,1675],budget:1585000},
+  {code:'C.05',desc:'Vibrated RC in upstands, plinths and miscellaneous items',unit:'m³',qty:45,rates:[1550,1900,1600,1560],budget:71000},
+  {code:'C.06',desc:'Precast concrete copings and sills, bedded and pointed',unit:'m',qty:260,rates:[90,118,85,87],budget:23000},
+  {code:'D.01',desc:'Hollow concrete blockwork 200 mm in external walls',unit:'m²',qty:1450,rates:[84,105,95,86],budget:131000},
+  {code:'D.02',desc:'Hollow concrete blockwork 100 mm in internal partitions',unit:'m²',qty:1700,rates:[50,65,48,49],budget:84000},
+  {code:'D.03',desc:'Internal cement plaster with skim coat to walls',unit:'m²',qty:8500,rates:[45,62,46,48],budget:400000},
+  {code:'D.04',desc:'External cement render on mesh to blockwork',unit:'m²',qty:950,rates:[56,72,53,54],budget:52000},
+  {code:'D.05',desc:'Precast lintels, ties and blockwork reinforcement',unit:'sum',qty:1,rates:[16000,21000,15000,15500],budget:16000},
+  {code:'E.01',desc:'Galvanised structural steel to roof plant screens and supports',unit:'kg',qty:3200,rates:[9,12,9,9],budget:29000},
+  {code:'E.02',desc:'Mild steel balustrades, powder coated, to stairs and balconies',unit:'m',qty:240,rates:[165,210,155,160],budget:39000},
+  {code:'E.03',desc:'Stainless steel handrail to lobby feature stair',unit:'m',qty:48,rates:[420,530,400,410],budget:20000},
+  {code:'E.04',desc:'Cat ladders, gratings and sundry metalwork',unit:'sum',qty:1,rates:[17000,22000,16000,16500],budget:17000},
+  {code:'F.01',desc:'Solid core flush doors including ironmongery, painted',unit:'nr',qty:64,rates:[1050,1320,1000,1020],budget:66000},
+  {code:'F.02',desc:'Fire-rated doorsets to cores and risers, certified',unit:'nr',qty:28,rates:[1700,2150,1620,1650],budget:47000},
+  {code:'F.03',desc:'Built-in joinery to reception and mail room',unit:'sum',qty:1,rates:[36000,47000,34000,35000],budget:36000},
+  {code:'F.04',desc:'Hardwood skirtings, architraves and trims',unit:'m',qty:1600,rates:[16,21,15,15],budget:25000},
+  {code:'G.01',desc:'Waterproofing membrane to raft and retaining walls',unit:'m²',qty:1250,rates:[45,58,43,44],budget:56000},
+  {code:'G.02',desc:'Liquid-applied waterproofing to wet areas',unit:'m²',qty:980,rates:[36,47,34,35],budget:35000},
+  {code:'G.03',desc:'Roof insulation and screed laid to falls',unit:'m²',qty:620,rates:[88,112,84,85],budget:54000},
+  {code:'G.04',desc:'Roof waterproofing membrane including protection board',unit:'m²',qty:620,rates:[78,100,74,76],budget:48000},
+  {code:'G.05',desc:'Movement joints and fire stopping through the works',unit:'sum',qty:1,rates:[22000,29000,21000,21000],budget:22000},
+  {code:'H.01',desc:'Aluminium curtain walling and glazing, DGU Low-E',unit:'m²',qty:1500,rates:[680,720,780,695],budget:1060000},
+  {code:'H.02',desc:'Entrance feature canopy, steel and glass',unit:'sum',qty:1,rates:[185000,210000,175000,190000],budget:188000},
+  {code:'H.03',desc:'Powder-coated aluminium windows including glazing',unit:'m²',qty:260,rates:[500,630,500,490],budget:130000},
+  {code:'H.04',desc:'Aluminium entrance doors and shopfronts',unit:'m²',qty:64,rates:[760,960,720,740],budget:48000},
+  {code:'H.05',desc:'Steel fire-rated doors to plant and service areas',unit:'nr',qty:26,rates:[1400,1780,1350,1370],budget:36000},
+  {code:'H.06',desc:'External louvres and ventilation grilles',unit:'m²',qty:85,rates:[330,420,315,320],budget:28000},
+  {code:'J.01',desc:'Porcelain floor tiling to common areas',unit:'m²',qty:3400,rates:[125,130,128,145],budget:440000},
+  {code:'J.02',desc:'Ceramic wall tiling to wet areas',unit:'m²',qty:950,rates:[92,118,88,90],budget:86000},
+  {code:'J.03',desc:'Marble flooring to entrance lobby',unit:'m²',qty:260,rates:[420,560,395,385],budget:106000},
+  {code:'J.04',desc:'Painted gypsum ceilings including access panels',unit:'m²',qty:1450,rates:[72,94,68,70],budget:103000},
+  {code:'J.05',desc:'Emulsion paint to walls and soffits',unit:'m²',qty:5200,rates:[12,16,11,12],budget:62000},
+  {code:'J.06',desc:'Epoxy coating to parking and plant room floors',unit:'m²',qty:1300,rates:[54,70,51,52],budget:69000},
+  {code:'J.07',desc:'Engineered timber flooring to residential units',unit:'m²',qty:240,rates:[115,148,108,111],budget:27000},
+  {code:'J.08',desc:'Stone cladding to podium elevations',unit:'m²',qty:120,rates:[470,600,445,455],budget:56000},
+  {code:'K.01',desc:'Toilet cubicles and vanity units',unit:'sum',qty:1,rates:[38000,49000,36000,36000],budget:37000},
+  {code:'K.02',desc:'Sanitary accessories and mirrors',unit:'sum',qty:1,rates:[21000,27000,20000,20000],budget:20000},
+  {code:'K.03',desc:'Statutory and back-of-house signage',unit:'sum',qty:1,rates:[12000,16000,11500,11000],budget:12000},
+  {code:'L.01',desc:'Refuse chute system, complete',unit:'sum',qty:1,rates:[64000,82000,60000,61000],budget:62000},
+  {code:'L.02',desc:'Mail boxes and parcel lockers',unit:'sum',qty:1,rates:[18000,24000,17000,17500],budget:18000},
+  {code:'L.03',desc:'Facade access cradle system (BMU)',unit:'sum',qty:1,rates:[48000,62000,45000,46000],budget:47000},
+  {code:'M.01',desc:'Reception desk and lobby furniture',unit:'sum',qty:1,rates:[42000,54000,40000,40000],budget:41000},
+  {code:'M.02',desc:'Roller blinds to common areas',unit:'sum',qty:1,rates:[15000,20000,14000,14500],budget:15000},
+  {code:'N.01',desc:'Swimming pool structure, finishes and plant',unit:'sum',qty:1,rates:[58000,75000,55000,56000],budget:57000},
+  {code:'N.02',desc:'Feature water wall to entrance plaza',unit:'sum',qty:1,rates:[28000,37000,26500,27000],budget:28000},
+  {code:'P.01',desc:'Lifts and escalators, 8 units, supply and install',unit:'sum',qty:1,rates:[1800000,0,1950000,1850000],budget:1850000},
+  {code:'P.02',desc:"Builder's work to lift shafts, guides and pit ladders",unit:'sum',qty:1,rates:[34000,44000,32000,33000],budget:34000},
+  {code:'P.03',desc:'Window cleaning monorail to podium soffit',unit:'sum',qty:1,rates:[21000,28000,20000,20000],budget:20000},
+  {code:'Q.01',desc:'Chilled water system and HVAC plant, complete',unit:'sum',qty:1,rates:[2050000,2080000,2120000,2400000],budget:2100000},
+  {code:'Q.02',desc:'Plumbing and drainage installation, complete',unit:'sum',qty:1,rates:[940000,1080000,830000,920000],budget:930000},
+  {code:'Q.03',desc:'Ductwork, dampers, grilles and diffusers',unit:'sum',qty:1,rates:[92000,118000,104000,94000],budget:99000},
+  {code:'Q.04',desc:'Fan coil units and controls',unit:'sum',qty:1,rates:[96000,124000,100000,97000],budget:98000},
+  {code:'Q.05',desc:'Ventilation and smoke extract fans',unit:'sum',qty:1,rates:[54000,70000,56000,55000],budget:56000},
+  {code:'Q.06',desc:'Firefighting installation including sprinklers and pumps',unit:'sum',qty:1,rates:[84000,108000,88000,81000],budget:86000},
+  {code:'Q.07',desc:'LPG distribution to residential units',unit:'sum',qty:1,rates:[32000,42000,30000,31000],budget:32000},
+  {code:'R.01',desc:'Electrical HV/LV installation, complete',unit:'sum',qty:1,rates:[1450000,1520000,1380000,1490000],budget:1470000},
+  {code:'R.02',desc:'Small power and wiring accessories',unit:'sum',qty:1,rates:[88000,113000,84000,85000],budget:86000},
+  {code:'R.03',desc:'Internal and external lighting including controls',unit:'sum',qty:1,rates:[82000,105000,86000,79000],budget:84000},
+  {code:'R.04',desc:'Fire alarm and voice evacuation system',unit:'sum',qty:1,rates:[62000,80000,59000,60000],budget:61000},
+  {code:'R.05',desc:'CCTV, access control and structured cabling',unit:'sum',qty:1,rates:[82000,106000,78000,79000],budget:80000},
+  {code:'R.06',desc:'Lightning protection and earthing',unit:'sum',qty:1,rates:[16000,21000,15000,15500],budget:16000},
+  {code:'R.07',desc:'Rooftop photovoltaic array, DEWA compliant',unit:'sum',qty:1,rates:[44000,57000,41000,42000],budget:43000},
+  {code:'PS-01',desc:'Signage and wayfinding (provisional sum, as issued)',unit:'Item',qty:1,rates:[150000,150000,150000,150000],budget:150000},
+  {code:'PS-02',desc:'Client contingency (provisional sum, as issued)',unit:'Item',qty:1,rates:[500000,500000,500000,500000],budget:500000},
+  {code:'DW-01',desc:'Daywork labour, provisional allowance',unit:'Item',qty:1,rates:[60000,60000,60000,60000],budget:60000},
+  {code:'DW-02',desc:'Daywork plant, provisional allowance',unit:'Item',qty:1,rates:[40000,40000,40000,40000],budget:40000},
+  {code:'DW-03',desc:'Daywork materials, provisional allowance',unit:'Item',qty:1,rates:[20000,20000,20000,20000],budget:20000},
 ];
 // Line items sum exactly to: 18,240,000 / 19,100,000 / 19,640,000 / 20,450,000
 
-// Bill sections: groups BOQ item codes into named bill sections for summary/drill-down views
+// Bill sections: prefix-mapped bill sections for summary/drill-down views and Excel sheets
 const SECTION_MAP = [
-  {name:'A Preliminaries',codes:['09.001']},
-  {name:'B Site Work',codes:['01.001']},
-  {name:'C Concrete Work',codes:['02.001','02.002','02.003']},
-  {name:'D Masonry & Plaster',codes:['03.001','03.002']},
-  {name:'H Doors, Windows & Facade',codes:['06.001','06.002']},
-  {name:'J Finishes',codes:['05.001','05.002','05.003']},
-  {name:'P Conveying Systems',codes:['07.001']},
-  {name:'Q/R MEP Services',codes:['04.001','04.002','04.003']},
-  {name:'External Works',codes:['08.001']},
-  {name:'OH&P',codes:['10.001']},
+  {name:'A General Requirements & Preliminaries',prefix:'A.',sheet:'A General Reqs'},
+  {name:'B Site Work',prefix:'B.',sheet:'B Site Work'},
+  {name:'C Concrete Work',prefix:'C.',sheet:'C Concrete Work'},
+  {name:'D Masonry',prefix:'D.',sheet:'D Masonry'},
+  {name:'E Metal Work',prefix:'E.',sheet:'E Metal Work'},
+  {name:'F Woodwork',prefix:'F.',sheet:'F Woodwork'},
+  {name:'G Thermal & Moisture Protection',prefix:'G.',sheet:'G Thermal-Moisture'},
+  {name:'H Doors & Windows',prefix:'H.',sheet:'H Doors & Windows'},
+  {name:'J Finishes',prefix:'J.',sheet:'J Finishes'},
+  {name:'K Accessories',prefix:'K.',sheet:'K Accessories'},
+  {name:'L Equipment',prefix:'L.',sheet:'L Equipment'},
+  {name:'M Furnishings',prefix:'M.',sheet:'M Furnishings'},
+  {name:'N Special Construction',prefix:'N.',sheet:'N Special Constr'},
+  {name:'P Conveying Systems',prefix:'P.',sheet:'P Conveying'},
+  {name:'Q Mechanical Engineering',prefix:'Q.',sheet:'Q Mechanical'},
+  {name:'R Electrical Engineering',prefix:'R.',sheet:'R Electrical'},
+  {name:'PS Provisional Sums',prefix:'PS-',sheet:'PS Prov Sums'},
+  {name:'DW Dayworks',prefix:'DW-',sheet:'DW Dayworks'},
 ];
+const sectionItems = (sec) => BOQ_ITEMS.filter(it=>it.code.startsWith(sec.prefix));
 
 const CONTRACTORS_BIDDING = [
   {id:1,name:'Meridian Contracting LLC',shortName:'Meridian'},
@@ -170,48 +250,95 @@ function downloadTenderPDF(){
   });
   doc.setFontSize(7.5);doc.setTextColor(150,140,128);doc.setFont('helvetica','normal');
   doc.text('CONFIDENTIAL: Issued to pre-qualified contractors only. Not for redistribution.',22,273);
-  // Page 2: Details + Requirements
+  // Page 2: The Invitation Letter
   doc.addPage();
-  let y=pdfBrandedHeader(doc,'Invitation to Tender: Project Details','Marina Views Main Works · T-2026-001 · Issued 10 March 2026');
-  y=pdfSectionLabel(doc,'PROJECT DETAILS',y);
-  [['Project Name','Marina Views Tower — Main Construction Works'],['Location','Dubai Marina, Dubai, UAE'],
-   ['Contract Type','Lump Sum, Single Package (Main Works)'],['Submission Deadline','12 March 2026 at 17:00 UAE Time'],
-   ['Bid Opening','13 March 2026 at 09:00 UAE Time (Witnessed ceremony, dual approval)'],
-   ['Contract Currency','AED (UAE Dirham)'],['Bid Validity','90 days from submission deadline'],
-   ['Liquidated Damages','AED 25,000 per calendar day'],].forEach(([k,v],i)=>{
-    const ry=y+i*7.5;
-    if(i%2===0){doc.setFillColor(250,248,244);doc.rect(15,ry-2,180,7.5,'F');}
-    doc.setFontSize(8.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');doc.text(k,18,ry+4);
-    doc.setTextColor(16,20,24);doc.setFont('helvetica','bold');doc.text(v,78,ry+4);
+  let y=pdfBrandedHeader(doc,'Invitation to Tender','Marina Views Tower, Main Construction Works · T-2026-001 · Issued 10 March 2026');
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+  doc.text('To: The Authorised Representative, [Tenderer]',15,y+4);
+  doc.text('Ref: T-2026-001 · Marina Views Tower, Main Construction Works',15,y+10);y+=18;
+  [
+   'Dear Sirs,',
+   'You are invited to submit a lump sum tender for the Main Construction Works of Marina Views Tower, Dubai Marina. This invitation is issued to a limited list of pre-qualified contractors through the Tenderbox platform, which governs this tender from issue to award.',
+   'The tender documents listed in Section 2 are available for download from your tender workspace. Your attention is drawn to the Instructions to Tenderers in Section 3, the returnable requirements in Section 4, and the key dates in Section 5.',
+   'Please confirm your intention to tender within five days of this invitation by accepting it in your workspace. Acceptance records your agreement to the Confidentiality Agreement. If you decline, please record a brief reason; declining carries no prejudice to future invitations.',
+   'Your priced submission must be made through the platform, where it is sealed on receipt and unreadable by any party until the controlled opening. The Client is not bound to accept the lowest or any tender, and no costs of tendering are reimbursable.',
+  ].forEach(p=>{
+    const lines=doc.splitTextToSize(p,180);
+    doc.setFontSize(8.5);doc.setTextColor(p==='Dear Sirs,'?16:62,p==='Dear Sirs,'?20:58,p==='Dear Sirs,'?24:52);
+    doc.text(lines,15,y);y+=lines.length*4.4+3;
   });
-  y+=8*7.5+10;
-  y=pdfSectionLabel(doc,'MANDATORY SUBMISSION REQUIREMENTS',y);
-  ['Priced Bill of Quantities (Excel format, all items)','Form of Tender (signed by authorised director)',
-   'Construction Programme (detailed bar chart, min 12 weeks)','Insurance Certificate (all required covers)',
-   'Addenda Acknowledgement (all issued addenda)','Site Inspection Confirmation'].forEach((req,i)=>{
-    doc.setFillColor(176,97,26);doc.circle(20,y+3.5,1.5,'F');
-    doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');doc.text(req,25,y+5);y+=8;
-  });
-  y+=6;y=pdfSectionLabel(doc,'EVALUATION CRITERIA',y);
-  [['Commercial (Price)','70%'],['Methodology & Programme','15%'],['HSE & Compliance','15%']].forEach(([k,v],i)=>{
-    if(i%2===0){doc.setFillColor(250,248,244);doc.rect(15,y-2,180,8,'F');}
-    doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');doc.text(k,18,y+4);
-    doc.setFont('helvetica','bold');doc.text(v,155,y+4,{align:'right'});y+=8;
-  });
-  // Page 3: BOQ
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);
+  doc.text('Yours faithfully,',15,y+3);
+  doc.setFont('helvetica','bold');doc.text('Graham Stevens · Client Admin',15,y+10);
+  doc.setFont('helvetica','normal');doc.setTextColor(110,103,95);doc.text('For and on behalf of the Employer',15,y+15);y+=24;
+  y=pdfSectionLabel(doc,'SECTION 2: TENDER DOCUMENTS ISSUED',y);
+  doc.autoTable({startY:y,head:[['Document','Volume','Returnable']],
+    body:[
+      ['Invitation to Tender and Instructions to Tenderers (this document)','—','No'],
+      ['Form of Tender (digital declaration)','Vol 1','Yes, e-signed at submission'],
+      ['General Conditions of Contract','Vol 1','No'],
+      ['Particular Conditions','Vol 1','No'],
+      ['Schedules to the Conditions','Vol 1','Yes, completed in workspace'],
+      ['General and Particular Specifications','Vol 2','No'],
+      ['Bill of Quantities, locked pricing copy (Excel)','Vol 3','Yes, priced and uploaded'],
+      ['Drawings Package, Rev C','Vol 4','No'],
+      ['Confidentiality Agreement','—','Yes, accepted at invitation'],
+    ],...AT_STYLE});
+  // Page 3: Instructions to Tenderers
   doc.addPage();
-  y=pdfBrandedHeader(doc,'Bill of Quantities','Marina Views Main Works · T-2026-001 · Price all items and return the complete BOQ in Excel');
-  doc.autoTable({startY:y,margin:{left:15,right:15},
-    headStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontStyle:'bold',fontSize:8},
-    bodyStyles:{fontSize:8,textColor:[62,58,52]},alternateRowStyles:{fillColor:[250,248,244]},
-    columnStyles:{0:{cellWidth:18,halign:'left'},1:{cellWidth:72,halign:'left'},2:{cellWidth:13,halign:'center'},
-      3:{cellWidth:17,halign:'right'},4:{cellWidth:33,halign:'right'},5:{cellWidth:25,halign:'center'}},
-    head:[['Code','Description','Unit','Qty','Indicative Rate (AED)','Contractor Rate']],
-    body:BOQ_ITEMS.map(item=>[item.code,item.desc,item.unit,item.qty.toLocaleString(),
-      item.unit==='sum'?'(Lump Sum)':(item.budget/item.qty).toFixed(0),'']),
-    foot:[['','TOTAL LUMP SUM BID VALUE (AED)','','','','']],
-    footStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontStyle:'bold',fontSize:9},
+  y=pdfBrandedHeader(doc,'Section 3: Instructions to Tenderers','Condensed instructions · The platform enforces what paper once requested');
+  [
+   ['1. The Tender','Lump sum tender, single package, contract currency AED, based on the documents listed in Section 2 and all addenda issued before the closing date.'],
+   ['2. Acknowledgement','Accept or decline this invitation in your workspace within five days. Acceptance binds the Confidentiality Agreement and opens document access. Every download is logged.'],
+   ['3. Site Visit','A site visit is available on request before 08 March 2026. Confirmation of inspection forms part of your submission.'],
+   ['4. Queries and Addenda','Submit queries, including measurement queries, through the workspace by 08 March 2026, 17:00. Answers are issued to all tenderers as addenda. Addenda acknowledgement is recorded automatically. No addenda are issued within 72 hours of closing.'],
+   ['5. Pricing Rules','Price only in the locked BOQ pricing copy: rate cells only, quantities and provisional sums as issued, dayworks as listed. Items left unpriced are deemed included in your rates. Arithmetic is checked on upload and you are notified of casting differences before the deadline.'],
+   ['6. Submission','Upload your priced BOQ and returnables, then e-sign the Form of Tender declaration. Your bid is sealed on receipt at database level; an instant receipt is issued to you alone. You may replace your submission any number of times before the deadline. Late submissions are rejected by the platform.'],
+   ['7. Opening','Bids unseal only after the deadline, when the named opening committee records its quorum of approvals. Minutes of opening are generated automatically.'],
+   ['8. Evaluation','Tenders are evaluated against the criteria in Section 5, exactly as issued. Commercial comparison is like-for-like at issued quantities with outliers flagged for clarification.'],
+   ['9. Clarifications and Negotiation','Clarification requests are issued as identically structured packs with identical response deadlines. Responses are made in the workspace, e-signed, and sealed until the response deadline.'],
+   ['10. Validity and Security','Tenders remain open for acceptance for 90 days from the closing date. A tender bond is not required for this package.'],
+   ['11. Conduct','Any communication with other tenderers regarding this tender, or any attempt to influence the process outside the platform, disqualifies the tender. The full process is recorded in an append-only audit log.'],
+   ['12. Award','The Client is not bound to accept the lowest or any tender. Award, if made, is by Letter of Acceptance issued through the platform.'],
+  ].forEach(([h,t])=>{
+    if(y>262){doc.addPage();y=pdfBrandedHeader(doc,'Section 3: Instructions to Tenderers (continued)','T-2026-001');}
+    doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','bold');doc.text(h,15,y+3);
+    const lines=doc.splitTextToSize(t,175);
+    doc.setFontSize(7.8);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+    doc.text(lines,20,y+8);y+=8+lines.length*3.8+3.5;
   });
+  // Page 4: Returnables, criteria, key dates
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'Sections 4 and 5: Returnables, Criteria and Key Dates','Marina Views Tower · T-2026-001');
+  y=pdfSectionLabel(doc,'SECTION 4: RETURNABLE REQUIREMENTS AT SUBMISSION',y);
+  doc.autoTable({startY:y,head:[['Requirement','Format','How Returned']],
+    body:[
+      ['Priced Bill of Quantities','Locked Excel pricing copy','Uploaded; validated instantly'],
+      ['Form of Tender declaration','Digital declaration','e-Signed by authorised signatory'],
+      ['Construction programme','PDF or native file, minimum level 3','Uploaded with submission'],
+      ['Insurance certificates','PDF','Uploaded with submission'],
+      ['Site inspection confirmation','Workspace confirmation','One click, logged'],
+      ['Addenda acknowledgement','Automatic','Recorded per addendum on download'],
+    ],...AT_STYLE});
+  y=doc.lastAutoTable.finalY+8;
+  y=pdfSectionLabel(doc,'SECTION 5A: EVALUATION CRITERIA (FIXED AT ISSUE)',y);
+  doc.autoTable({startY:y,head:[['Criterion','Weight']],
+    body:[['Commercial (Price)','70%'],['Methodology and Programme','15%'],['HSE and Compliance','15%']],
+    columnStyles:{1:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+8;
+  y=pdfSectionLabel(doc,'SECTION 5B: KEY DATES',y);
+  doc.autoTable({startY:y,head:[['Event','Date and Time (UAE)']],
+    body:[
+      ['Invitation issued','10 March 2026'],
+      ['Acknowledgement due','Within 5 days of invitation'],
+      ['Queries close','08 March 2026, 17:00'],
+      ['Submission deadline','12 March 2026, 17:00'],
+      ['Opening committee','13 March 2026, 09:00'],
+      ['Tender validity expires','10 June 2026'],
+    ],columnStyles:{1:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+6;
+  doc.setFontSize(7.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('Note: submission, sealing, opening, acknowledgements and downloads are enforced and recorded by the platform. Requirements that exist on paper only to police a paper process have been deliberately omitted.',180),15,y+3);
   const pc1=doc.getNumberOfPages();
   for(let i=2;i<=pc1;i++){doc.setPage(i);pdfFooter(doc,i,pc1);}
   doc.save('Tenderbox_T-2026-001_Invitation_to_Tender.pdf');
@@ -343,7 +470,7 @@ function downloadAnalysisPDF(){
   y=pdfSectionLabel(doc,'KEY COMMERCIAL OBSERVATIONS',y);
   [`Lowest bid: AED ${Number(TOTALS[0]).toLocaleString()} (Meridian Contracting LLC), ${Math.abs(parseFloat(vsBudget)).toFixed(1)}% below the approved budget of AED 19,000,000.`,
    `Total bid spread: ${spread}% between lowest and highest bid, which represents meaningful negotiation headroom.`,
-   `Crescent Gulf Engineering omitted rate for Lifts & Escalators (07.001), a significant scope gap requiring clarification before award.`,
+   `Crescent Gulf Engineering omitted rate for Lifts & Escalators (P.01), a significant scope gap requiring clarification before award.`,
    `Meridian Contracting LLC is recommended for award subject to satisfactory clarification of outstanding risk items.`,
   ].forEach(obs=>{
     doc.setFillColor(176,97,26);doc.circle(20,y+3.5,1.5,'F');
@@ -381,6 +508,7 @@ function downloadAnalysisPDF(){
           const item=BOQ_ITEMS[ri];const ci=data.column.index-4;const r=item.rates[ci];
           const vr=item.rates.filter(x=>x>0);const lo=Math.min(...vr),hi=Math.max(...vr);
           if(r===0){data.cell.styles.textColor=[179,54,43];data.cell.styles.fontStyle='bold';}
+          else if(lo===hi){/* locked PS/DW rows: identical by design, no highlight */}
           else if(r===lo){data.cell.styles.textColor=[30,127,79];data.cell.styles.fontStyle='bold';data.cell.styles.fillColor=[226,240,232];}
           else if(r===hi){data.cell.styles.textColor=[146,48,40];data.cell.styles.fillColor=[247,233,230];}
         }
@@ -424,13 +552,13 @@ function downloadAnalysisPDF(){
   y=doc.lastAutoTable.finalY+14;
   y=pdfSectionLabel(doc,'RISK FLAGS',y);
   [{sev:'HIGH',col:[179,54,43],fill:[247,233,230],
-    title:'Missing rate: Lifts & Escalators (07.001)',
-    detail:'Crescent Gulf Engineering submitted no rate for item 07.001 (Lifts & Escalators, 8 units). Exposure: AED 1,800,000+. Formal clarification required before award recommendation.'},
+    title:'Missing rate: Lifts & Escalators (P.01)',
+    detail:'Crescent Gulf Engineering submitted no rate for item P.01 (Lifts & Escalators, 8 units). Exposure: AED 1,800,000+. Formal clarification required before award recommendation.'},
    {sev:'MEDIUM',col:[140,98,20],fill:[248,240,222],
     title:'HVAC rate outlier: Atlas Construction Group (+14.3% above median)',
     detail:'Atlas HVAC rate (AED 2,400,000) is 14.3% above median. Investigate scope difference or pricing assumption. Exposure: AED 300,000 above median.'},
    {sev:'MEDIUM',col:[140,98,20],fill:[248,240,222],
-    title:'Spread on RC Columns & Shear Walls (02.002): 13.5%',
+    title:'Spread on RC Columns & Shear Walls (C.03): 13.5%',
     detail:'Rate spread exceeds 10% threshold. Meridian at AED 1,850/m³ vs Stonebridge at AED 2,100/m³. Verify specification assumptions are consistent.'},
    {sev:'LOW',col:[176,97,26],fill:[245,238,228],
     title:'Construction programme missing: Crescent Gulf Engineering',
@@ -458,37 +586,39 @@ function downloadAnalysisPDF(){
 // ── NEGOTIATION PACK DATA (per contractor, identical structure) ────────
 const RECEIPTS = ['RCT-2841-7F2A','RCT-2938-9C41','RCT-3035-3B08','RCT-3132-E65D'];
 const NEG_DATA = [
-  { flags:7, prelims:8.2, ohp:5.3, arithmetic:{delta:'+12,400',corrected:'18,252,400',rows:[['02.002','RC Columns: extension error, qty x rate','+9,150'],['05.001','Floor tiling: page total rounding','+3,250']]},
+  { flags:7, prelims:8.2, ohp:5.3, arithmetic:{delta:'+12,400',corrected:'18,252,400',rows:[['C.03','RC columns and shear walls: extension error, qty x rate','+9,150'],['J.01','Porcelain floor tiling: page total rounding','+3,250']]},
     casting:[['C Concrete Work','+9,150'],['J Finishes','+3,250']],
-    missing:[['03.003','Movement joints to blockwork','m','420','18.50','7,770'],['05.004','Porcelain skirting to corridors','m','1,150','32.00','36,800']],
+    missing:[['D.06','Movement joints to blockwork','m','420','18.50','7,770'],['J.09','Porcelain skirting to corridors','m','1,150','32.00','36,800']],
     high:[],
-    low:[['02.002','RC Columns & Shear Walls','1,850/m³','1,960','−5.6%','Confirm scope coverage at this rate'],['04.002','Electrical HV/LV Works','1,450,000','1,470,000','−1.4%','Confirm cable specification allowed'],['06.001','Curtain Wall & Glazing','680/m²','708','−3.9%','Confirm DGU Low-E specification']],
+    low:[['C.03','RC Columns & Shear Walls','1,850/m³','1,960','−5.6%','Confirm scope coverage at this rate'],['R.01','Electrical HV/LV Works','1,450,000','1,470,000','−1.4%','Confirm cable specification allowed'],['H.01','Curtain Wall & Glazing','680/m²','708','−3.9%','Confirm DGU Low-E specification']],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','500,000','Unchanged']],
-    psFlag:null,
+    psFlag:null, psNote:null,
     quals:[['Q1','Dewatering assumed not required','Withdraw, or price as a fixed inclusion']] },
   { flags:9, prelims:9.1, ohp:6.6, arithmetic:{delta:'0',corrected:'19,100,000',rows:[['—','No arithmetic errors identified','0']]},
     casting:[['All sections cast correctly','0']],
-    missing:[['07.001','Lifts & Escalators (8 units)','sum','1','1,850,000','1,850,000+']],
-    high:[['02.003','RC Beams & Slabs','2,150/m³','1,760','+22.2%','Substantiate or revise'],['03.002','Internal Plaster & Skim','62/m²','47','+31.9%','Substantiate or revise'],['04.003','Plumbing & Drainage','1,080,000','930,000','+16.1%','Substantiate or revise']],
+    missing:[['P.01','Lifts & Escalators (8 units)','sum','1','1,850,000','1,850,000+']],
+    high:[['C.04','RC Beams & Slabs','2,150/m³','1,760','+22.2%','Substantiate or revise'],['D.03','Internal Plaster & Skim','62/m²','47','+31.9%','Substantiate or revise'],['Q.02','Plumbing & Drainage','1,080,000','930,000','+16.1%','Substantiate or revise']],
     low:[],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','260,000','REDUCED by 240,000']],
     psFlag:'PS-02 Contingency has been reduced from the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
-    quals:[['Q1','Construction programme not submitted','Mandatory item: submit with your response'],['Q2','Lifts excluded from offer','Unacceptable: price item 07.001 or confirm inclusion']] },
-  { flags:6, prelims:11.4, ohp:5.7, arithmetic:{delta:'−8,200',corrected:'19,631,800',rows:[['06.001','Curtain wall: duplicated carry-forward','−8,200']]},
-    casting:[['H Doors, Windows & Facade','−8,200']],
+    psNote:'Note: their submitted file altered this value; the comparison runs at the issued value.',
+    quals:[['Q1','Construction programme not submitted','Mandatory item: submit with your response'],['Q2','Lifts excluded from offer','Unacceptable: price item P.01 or confirm inclusion']] },
+  { flags:6, prelims:11.4, ohp:5.7, arithmetic:{delta:'−8,200',corrected:'19,631,800',rows:[['H.01','Curtain wall: duplicated carry-forward','−8,200']]},
+    casting:[['H Doors & Windows','−8,200']],
     missing:[],
-    high:[['02.002','RC Columns & Shear Walls','2,100/m³','1,960','+7.1%','Substantiate or revise']],
-    low:[['06.002','Entrance Feature Canopy','175,000','187,500','−6.7%','Confirm scope coverage'],['04.002','Electrical HV/LV Works','1,380,000','1,470,000','−6.1%','Confirm scope coverage']],
+    high:[['C.03','RC Columns & Shear Walls','2,100/m³','1,960','+7.1%','Substantiate or revise']],
+    low:[['H.02','Entrance Feature Canopy','175,000','187,500','−6.7%','Confirm scope coverage'],['R.01','Electrical HV/LV Works','1,380,000','1,470,000','−6.1%','Confirm scope coverage']],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','500,000','Unchanged']],
-    psFlag:null,
+    psFlag:null, psNote:null,
     quals:[['Q1','Steel price fluctuation rider','Withdraw: lump sum contract, no fluctuation provisions']] },
   { flags:8, prelims:12.8, ohp:7.8, arithmetic:{delta:'0',corrected:'20,450,000',rows:[['—','No arithmetic errors identified','0']]},
     casting:[['All sections cast correctly','0']],
     missing:[],
-    high:[['04.001','Chilled Water System (HVAC)','2,400,000','2,100,000','+14.3%','Substantiate or revise: ~300,000 above median'],['05.001','Porcelain Floor Tiling','145/m²','129','+12.4%','Substantiate or revise']],
+    high:[['Q.01','Chilled Water System (HVAC)','2,400,000','2,100,000','+14.3%','Substantiate or revise: ~300,000 above median'],['J.01','Porcelain Floor Tiling','145/m²','129','+12.4%','Substantiate or revise']],
     low:[],
     ps:[['PS-01','Signage & Wayfinding','150,000','150,000','Unchanged'],['PS-02','Contingency (Client)','500,000','650,000','INCREASED by 150,000']],
     psFlag:'PS-02 Contingency has been increased above the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
+    psNote:null,
     quals:[['Q1','HVAC based on alternative manufacturer','Confirm compliance with specified performance or revert to specified system']] },
 ];
 const AT_STYLE = {theme:'grid',styles:{fontSize:7.5,textColor:[16,20,24],lineColor:[216,210,198],lineWidth:0.2,cellPadding:2},headStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontSize:7.5,fontStyle:'bold'},alternateRowStyles:{fillColor:[250,248,244]}};
@@ -547,47 +677,68 @@ function downloadTechnicalEvaluationPDF(){
   doc.save('Tenderbox_T-2026-001_Technical_Evaluation_Report.pdf');
 }
 
-// ── EXCEL: LOCKED BOQ PRICING COPY ────────────────────────────────────
+// ── EXCEL: LOCKED BOQ PRICING COPY (one worksheet per bill section) ───
 function downloadPricingBOQ(){
   const XL=window.XLSX; const wb=XL.utils.book_new();
+  const isPrefilled=(code)=>code.startsWith('PS-')||code.startsWith('DW-');
   // Sheet 1: Instructions
   const wsI=XL.utils.aoa_to_sheet([
     ['TENDERBOX · BOQ PRICING COPY'],
     ['Tender: T-2026-001 · Marina Views Tower, Main Construction Works · BOQ Revision 0'],
     [],
     ['HOW TO PRICE THIS BILL'],
-    ['1. Enter your rate in the Rate (AED) column on the BOQ sheet. Only Rate cells are editable.'],
-    ['2. Amounts and the bill total are calculated automatically. Do not overwrite formulas.'],
-    ['3. Provisional sums (PS-01, PS-02) are client-directed, pre-filled and locked. Carry them as issued.'],
-    ['4. Dayworks and structure rows are locked. Do not add, delete, hide or reorder rows or columns.'],
+    ['1. The bill is arranged in one worksheet per section (A to R, plus PS and DW). Enter your rate in the Rate (AED) column only.'],
+    ['2. Amounts, section collections and the Bill Summary are calculated automatically. Do not overwrite formulas.'],
+    ['3. Provisional sums (PS-01, PS-02) and dayworks (DW-01 to DW-03) are client-directed, pre-filled and locked. Carry them as issued.'],
+    ['4. Structure rows are locked. Do not add, delete, hide or reorder rows, columns or worksheets.'],
     ['5. Any item left unpriced is deemed included within your other rates.'],
     ['6. A checksum validates the file structure at upload. A modified structure is rejected at submission.'],
     [],
     ['Structure locked · Rate column only'],
   ]);
-  wsI['!cols']=[{wch:105}];
+  wsI['!cols']=[{wch:112}];
   wsI['!protect']={password:undefined,selectLockedCells:true,selectUnlockedCells:true};
   XL.utils.book_append_sheet(wb,wsI,'Instructions');
-  // Sheet 2: BOQ
-  const aoa=[
-    ['Tenderbox · T-2026-001 · BOQ Pricing Copy · Revision 0'],
-    ['Structure locked · Rate column only'],
+  // One worksheet per bill section, each with a Collection (SUM) row
+  const collections=[];
+  SECTION_MAP.forEach(sec=>{
+    const items=sectionItems(sec);
+    const aoa=[
+      ['Tenderbox · T-2026-001 · BOQ Pricing Copy · Revision 0'],
+      [sec.name+' · Structure locked · Rate column only'],
+      [],
+      ['Code','Description','Unit','Qty','Rate (AED)','Amount (AED)'],
+    ];
+    items.forEach(it=>aoa.push([it.code,it.desc,it.unit,it.qty,isPrefilled(it.code)?it.rates[0]:null,null]));
+    aoa.push(['',sec.name+' · COLLECTION (AED)','','',null,null]);
+    const ws=XL.utils.aoa_to_sheet(aoa);
+    const firstRow=5, collRow=firstRow+items.length; // 1-based rows
+    items.forEach((it,i)=>{const r=firstRow+i;ws['F'+r]={t:'n',f:'E'+r+'*D'+r};});
+    ws['F'+collRow]={t:'n',f:'SUM(F'+firstRow+':F'+(collRow-1)+')'};
+    ws['!ref']='A1:F'+collRow;
+    ws['!cols']=[{wch:9},{wch:58},{wch:7},{wch:9},{wch:14},{wch:16}];
+    // Cell-level unlock flags may not survive community SheetJS; sheet protection set, plus visible header note above
+    ws['!protect']={password:undefined,selectLockedCells:true,selectUnlockedCells:true};
+    XL.utils.book_append_sheet(wb,ws,sec.sheet);
+    collections.push({name:sec.name,ref:"'"+sec.sheet+"'!F"+collRow});
+  });
+  // Bill Summary: references each section collection cell by formula
+  const sumAoa=[
+    ['Tenderbox · T-2026-001 · Bill Summary'],
+    ['Each section total references the collection cell of its worksheet'],
     [],
-    ['Code','Description','Unit','Qty','Rate (AED)','Amount (AED)'],
+    ['Bill Section','Total (AED)'],
   ];
-  BOQ_ITEMS.forEach(it=>aoa.push([it.code,it.desc,it.unit,it.qty,null,null]));
-  aoa.push(['PS-01','Signage & Wayfinding (Provisional Sum, as issued)','sum',1,150000,150000]);
-  aoa.push(['PS-02','Contingency, Client (Provisional Sum, as issued)','sum',1,500000,500000]);
-  aoa.push(['','TOTAL LUMP SUM BID VALUE (AED)','','',null,null]);
-  const ws=XL.utils.aoa_to_sheet(aoa);
-  const firstRow=5, lastRow=firstRow+BOQ_ITEMS.length+1; // items then 2 PS rows (1-based)
-  BOQ_ITEMS.forEach((it,i)=>{const r=firstRow+i;ws['F'+r]={t:'n',f:'E'+r+'*D'+r};});
-  ws['F'+(lastRow+1)]={t:'n',f:'SUM(F'+firstRow+':F'+lastRow+')'};
-  ws['!cols']=[{wch:9},{wch:46},{wch:7},{wch:9},{wch:14},{wch:16}];
-  // Cell-level unlock flags may not survive community SheetJS; sheet protection set, plus visible header note above
-  ws['!protect']={password:undefined,selectLockedCells:true,selectUnlockedCells:true};
-  XL.utils.book_append_sheet(wb,ws,'BOQ');
-  // Sheet 3: hidden metadata
+  collections.forEach(c=>sumAoa.push([c.name,null]));
+  sumAoa.push(['GRAND TOTAL · LUMP SUM BID VALUE (AED)',null]);
+  const wsS=XL.utils.aoa_to_sheet(sumAoa);
+  collections.forEach((c,i)=>{wsS['B'+(5+i)]={t:'n',f:c.ref};});
+  wsS['B'+(5+collections.length)]={t:'n',f:'SUM(B5:B'+(4+collections.length)+')'};
+  wsS['!ref']='A1:B'+(5+collections.length);
+  wsS['!cols']=[{wch:46},{wch:18}];
+  wsS['!protect']={password:undefined,selectLockedCells:true,selectUnlockedCells:true};
+  XL.utils.book_append_sheet(wb,wsS,'Bill Summary');
+  // Hidden metadata
   const wsM=XL.utils.aoa_to_sheet([
     ['tender_id','T-2026-001'],
     ['contractor','{{CONTRACTOR_NAME}}'],
@@ -595,7 +746,7 @@ function downloadPricingBOQ(){
     ['checksum','TBX-CHK-9f4e2a71c8d05b36'],
   ]);
   XL.utils.book_append_sheet(wb,wsM,'_meta');
-  wb.Workbook={Sheets:[{Hidden:0},{Hidden:0},{Hidden:1}]};
+  wb.Workbook={Sheets:wb.SheetNames.map(n=>({Hidden:n==='_meta'?1:0}))};
   XL.writeFile(wb,'Tenderbox_T-2026-001_BOQ_PricingCopy.xlsx');
 }
 
@@ -603,23 +754,23 @@ function downloadPricingBOQ(){
 function downloadComparisonExcel(){
   const XL=window.XLSX; const wb=XL.utils.book_new();
   const names=CONTRACTORS_BIDDING.map(c=>c.shortName);
-  // Sheet 1: Bill Summary (sections x contractors)
+  // Sheet 1: Bill Summary (all sections in bill order x contractors, from live data)
   const sum=[['Bill Section','Items',...names.map(n=>n+' (AED)')]];
   SECTION_MAP.forEach(sec=>{
-    const items=BOQ_ITEMS.filter(it=>sec.codes.includes(it.code));
+    const items=sectionItems(sec);
     const tots=[0,1,2,3].map(ci=>items.reduce((s,it)=>s+(it.rates[ci]>0?it.qty*it.rates[ci]:0),0));
     sum.push([sec.name,items.length,...tots]);
   });
   sum.push(['TOTAL BID VALUE (AED)',BOQ_ITEMS.length,...TOTALS]);
   const ws1=XL.utils.aoa_to_sheet(sum);
-  ws1['!cols']=[{wch:26},{wch:6},{wch:14},{wch:14},{wch:14},{wch:14}];
+  ws1['!cols']=[{wch:40},{wch:6},{wch:14},{wch:14},{wch:14},{wch:14}];
   XL.utils.book_append_sheet(wb,ws1,'Bill Summary');
   // Sheet 2: Detail (all BOQ line items x contractor amounts)
   const det=[['Code','Description','Unit','Qty',...names.map(n=>n+' Amount (AED)')]];
   BOQ_ITEMS.forEach(it=>det.push([it.code,it.desc,it.unit,it.qty,...it.rates.map(r=>r*it.qty)]));
   det.push(['','TOTAL BID VALUE (AED)','','',...TOTALS]);
   const ws2=XL.utils.aoa_to_sheet(det);
-  ws2['!cols']=[{wch:9},{wch:38},{wch:7},{wch:9},{wch:16},{wch:16},{wch:16},{wch:16}];
+  ws2['!cols']=[{wch:9},{wch:58},{wch:7},{wch:9},{wch:16},{wch:16},{wch:16},{wch:16}];
   XL.utils.book_append_sheet(wb,ws2,'Detail');
   XL.writeFile(wb,'Tenderbox_T-2026-001_Comparison.xlsx');
 }
@@ -691,6 +842,7 @@ function downloadNegotiationPack(ci){
   doc.autoTable({startY:y,head:[['Ref','Description','Issued (AED)','Carried (AED)','Status']],body:d.ps,columnStyles:{2:{halign:'right'},3:{halign:'right'}},...AT_STYLE});
   y=doc.lastAutoTable.finalY+4;
   if(d.psFlag){doc.setFontSize(8);doc.setTextColor(179,54,43);doc.setFont('helvetica','bold');doc.text(doc.splitTextToSize('FLAG: '+d.psFlag,180),15,y+3);y+=14;} else {y+=4;}
+  if(d.psNote){doc.setFontSize(7.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');doc.text(doc.splitTextToSize(d.psNote,180),15,y+1);y+=8;}
   y=pdfSectionLabel(doc,'4B: PRELIMINARIES',y);
   doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
   doc.text('Your preliminaries and site overhead: '+d.prelims.toFixed(1)+'% of corrected tender total.  Field range: 8.2% to 12.8%.',15,y+3);
@@ -755,7 +907,7 @@ function downloadAwardRecommendationPDF(){
     columnStyles:{2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}},...AT_STYLE});
   y=doc.lastAutoTable.finalY+4;
   doc.setFontSize(7.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
-  doc.text(doc.splitTextToSize('Note: Crescent Gulf Engineering\'s post-clarification price includes AED 1,795,000 for item 07.001 (Lifts & Escalators), unpriced in their original submission. The corrected column reflects arithmetic checks only; rates unchanged.',180),15,y+2);y+=12;
+  doc.text(doc.splitTextToSize('Note: Crescent Gulf Engineering\'s post-clarification price includes AED 1,795,000 for item P.01 (Lifts & Escalators), unpriced in their original submission. The corrected column reflects arithmetic checks only; rates unchanged.',180),15,y+2);y+=12;
   y=pdfSectionLabel(doc,'3. COMPLIANCE MATRIX',y);
   doc.autoTable({startY:y,
     head:[['Requirement','Meridian','Crescent Gulf','Stonebridge','Atlas']],
@@ -830,6 +982,74 @@ function downloadAwardRecommendationPDF(){
   const pcA=doc.getNumberOfPages();
   for(let i=2;i<=pcA;i++){doc.setPage(i);pdfFooter(doc,i,pcA);}
   doc.save('Tenderbox_T-2026-001_Recommendation_For_Award.pdf');
+}
+
+// ── PDF: LETTER OF ACCEPTANCE (LOA) ───────────────────────────────────
+function downloadLOAPDF(){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+  // Page 1: the letter
+  let y=pdfBrandedHeader(doc,'Letter of Acceptance','Marina Views Tower, Main Construction Works · Document Ref: T-2026-001-LOA · Revision 0');
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+  doc.text('Ref: T-2026-001-LOA',15,y+4);
+  doc.text('Date: 30 March 2026',15,y+9);
+  doc.text('To: The Authorised Representative',15,y+17);
+  doc.setFont('helvetica','bold');doc.text('Meridian Contracting LLC',15,y+22);
+  doc.setFont('helvetica','normal');doc.setTextColor(110,103,95);
+  doc.text('Attn: Omar Khalidi · P.O. Box 118221, Dubai, United Arab Emirates',15,y+27);
+  y+=36;
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','bold');
+  doc.text(doc.splitTextToSize('LETTER OF ACCEPTANCE: MARINA VIEWS TOWER, MAIN CONSTRUCTION WORKS (TENDER T-2026-001)',180),15,y);y+=10;
+  [
+   'Dear Sirs,',
+   'We refer to your tender dated 12 March 2026 for the above Works, as clarified and amended by Addendum 01, your Round 1 clarification response of 20 March 2026 and your best and final offer of 27 March 2026, all made and sealed through the Tenderbox platform.',
+   'The Employer hereby accepts your last and final lump sum price of AED 17,985,000 (Seventeen Million Nine Hundred and Eighty Five Thousand UAE Dirhams) for the execution and completion of the Works and the remedying of any defects therein, in accordance with the documents listed in the Invitation to Tender and all addenda issued before the closing date.',
+   'The contract sum analysis is as recorded in the sealed best and final offer comparison of 27 March 2026. Provisional sums and daywork allowances are carried at their issued values and will be expended only as instructed.',
+   'Within 14 days of the date of this letter you shall deliver a performance guarantee for 10 per cent of the contract sum in the form annexed to the Particular Conditions, and you shall provide evidence of the insurances required under the Conditions of Contract before possession of the site is given.',
+   'This Letter of Acceptance, together with your tender and the documents referred to above, creates a binding contract between the parties, which remains in effect until the formal Contract Agreement is prepared and executed.',
+   'Please acknowledge receipt by countersigning the Contract Particulars attached and returning them through the platform within 7 days.',
+  ].forEach(p=>{
+    const lines=doc.splitTextToSize(p,180);
+    doc.setFontSize(8.5);doc.setFont('helvetica','normal');
+    doc.setTextColor(p==='Dear Sirs,'?16:62,p==='Dear Sirs,'?20:58,p==='Dear Sirs,'?24:52);
+    doc.text(lines,15,y);y+=lines.length*4.4+3;
+  });
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);
+  doc.text('Yours faithfully,',15,y+3);
+  doc.setFont('helvetica','bold');doc.text('Graham Stevens · Client Admin',15,y+11);
+  doc.setFont('helvetica','normal');doc.setTextColor(110,103,95);doc.text('For and on behalf of the Employer',15,y+16);
+  // Page 2: contract particulars + signatures
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'Contract Particulars','Letter of Acceptance · T-2026-001-LOA · Revision 0');
+  y=pdfSectionLabel(doc,'CONTRACT PARTICULARS',y);
+  doc.autoTable({startY:y,head:[['Particular','Value']],
+    body:[
+      ['Contract sum','AED 17,985,000 (fixed lump sum)'],
+      ['The Works','Marina Views Tower, Main Construction Works, Dubai Marina, Dubai, UAE'],
+      ['The Contractor','Meridian Contracting LLC (Grade A, pre-qualified)'],
+      ['Commencement date','20 April 2026, or as fixed in the Notice to Proceed'],
+      ['Time for completion','78 weeks from commencement (completion by 18 October 2027)'],
+      ['Defects liability period','12 months from taking over'],
+      ['Liquidated damages','AED 25,000 per day of delay, capped at 10% of the contract sum'],
+      ['Retention','10% of each interim payment, capped at 5% of the contract sum'],
+      ['Performance guarantee','10% of the contract sum, unconditional and on demand, within 14 days'],
+      ['Insurances','CAR, third party liability and workmen\'s compensation before possession'],
+      ['Payment terms','Monthly interim valuations; payment within 30 days of certification'],
+      ['Priority of documents','Contract Agreement; this Letter of Acceptance; Particular Conditions; General Conditions; Specifications; Drawings; priced Bill of Quantities'],
+    ],columnStyles:{0:{cellWidth:52,fontStyle:'bold'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+10;
+  y=pdfSectionLabel(doc,'SIGNATURES',y);
+  [['Signed for and on behalf of the Employer','Graham Stevens, Client Admin'],
+   ['Contractor\'s acknowledgement of receipt','Authorised signatory, Meridian Contracting LLC']].forEach(([role,name])=>{
+    doc.setFontSize(8.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');doc.text(doc.splitTextToSize(role,62),15,y+5);
+    doc.setDrawColor(16,20,24);doc.line(85,y+6,150,y+6);doc.line(160,y+6,195,y+6);
+    doc.setFontSize(7);doc.setTextColor(138,129,119);doc.text(name,85,y+10);doc.text('Date',160,y+10);
+    y+=18;
+  });
+  doc.setFontSize(7.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('This letter issues on recording of the Award Approval e-gate. Issue, delivery and the contractor\'s acknowledgement are recorded in the append-only audit log.',180),15,y+4);
+  const pcL=doc.getNumberOfPages();
+  for(let i=1;i<=pcL;i++){doc.setPage(i);pdfFooter(doc,i,pcL);}
+  doc.save('Tenderbox_T-2026-001_Letter_of_Acceptance.pdf');
 }
 
 function Badge({color,children,style={}}) {
@@ -1017,10 +1237,10 @@ function TopBar({title,sub,actions}) {
 // ── DASHBOARD ─────────────────────────────────────────────────────────
 function Dashboard({setPage, setActiveTender}) {
   const stats = [
-    {label:'Active Tenders',val:'3',color:C.blue,icon:'📄'},
-    {label:'Contractors DB',val:'47',color:C.teal,icon:'👥'},
-    {label:'Bids Received',val:'12',color:C.gold,icon:'📬'},
-    {label:'Awards Pending',val:'1',color:C.navy,icon:'🏆'},
+    {label:'Active Tenders',val:'3',color:C.blue,icon:'📄',page:'tenders',hint:'View all tenders'},
+    {label:'Contractors DB',val:'47',color:C.teal,icon:'👥',page:'contractors',hint:'Open the contractor database'},
+    {label:'Bids Received',val:'12',color:C.gold,icon:'📬',page:'tender-detail',hint:'View sealed submissions'},
+    {label:'Awards Pending',val:'1',color:C.navy,icon:'🏆',page:'analysis',hint:'Open commercial analysis'},
   ];
   const tenders = [
     {id:'T-2026-001',name:'Marina Views — Main Works',value:'AED 19.0M',contractors:4,status:'open',statusColor:'green',statusLabel:'Analysis Ready',deadline:'Opened 09:00 · Analysis ready 09:02'},
@@ -1035,7 +1255,10 @@ function Dashboard({setPage, setActiveTender}) {
       ]}/>
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:28}}>
         {stats.map((s,i) => (
-          <Card key={i} style={{padding:20}}>
+          <div key={i} title={s.hint} onClick={()=>{if(s.page==='tender-detail'){setActiveTender({id:'T-2026-001',name:'Marina Views — Main Works'});}setPage(s.page);}}
+            onMouseEnter={e=>{e.currentTarget.style.background='rgba(176,97,26,.05)';e.currentTarget.style.borderColor=C.blue;}}
+            onMouseLeave={e=>{e.currentTarget.style.background='white';e.currentTarget.style.borderColor=C.gray200;}}
+            style={{background:'white',border:`1px solid ${C.gray200}`,padding:20,cursor:'pointer',transition:'all .15s'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
               <div>
                 <div style={{fontFamily:HEAD_FONT,fontSize:28,fontWeight:900,color:s.color,letterSpacing:'-1px'}}>{s.val}</div>
@@ -1043,7 +1266,8 @@ function Dashboard({setPage, setActiveTender}) {
               </div>
               <span style={{fontSize:24}}>{s.icon}</span>
             </div>
-          </Card>
+            <div style={{marginTop:10,fontSize:11,fontWeight:600,color:C.gray400,display:'flex',alignItems:'center',gap:4}}>{s.hint} <span style={{color:C.blue}}>→</span></div>
+          </div>
         ))}
       </div>
       <Card style={{padding:0,overflow:'hidden'}}>
@@ -1307,20 +1531,23 @@ function TenderDetail({tender, setPage}) {
           <div style={{fontSize:12,fontWeight:700,color:C.navy,letterSpacing:'.06em',textTransform:'uppercase',marginBottom:12}}>Governance Gates</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10}}>
             {[
-              {label:'Strategy Approved',date:'28 Feb',done:true},
-              {label:'Issue Approved',date:'28 Feb',done:true},
-              {label:'Opening Committee',date:'13 Mar',done:true},
-              {label:'Evaluation',date:'13 Mar',done:true},
-              {label:'Award Approval',date:'Pending',done:false},
+              {label:'Strategy Approved',date:'28 Feb',done:true,by:'Graham Stevens, Client Admin',at:'28 Feb 2026, 09:41'},
+              {label:'Issue Approved',date:'28 Feb',done:true,by:'Rania Al Hajji, QS Lead',at:'28 Feb 2026, 10:12'},
+              {label:'Opening Committee',date:'13 Mar',done:true,by:'G. Stevens and R. Al Hajji, dual approval',at:'13 Mar 2026, 09:00'},
+              {label:'Evaluation',date:'13 Mar',done:true,by:'Rania Al Hajji, QS Lead',at:'13 Mar 2026, 09:02'},
+              {label:'Award Approval',date:'Pending',done:false,by:'Client Representative',at:'Awaiting e-signature'},
             ].map((g,i)=>(
-              <div key={i} style={{border:`1px solid ${g.done?'rgba(30,127,79,.25)':'rgba(176,124,26,.35)'}`,background:g.done?'rgba(30,127,79,.05)':'rgba(176,124,26,.07)',padding:'10px 12px'}}>
+              <div key={i}
+                title={g.done?`e-Approved by ${g.by} · ${g.at}`:`Awaiting ${g.by}. Award approval is the final e-gate; the LOA generates on approval.`}
+                onClick={g.done?undefined:()=>alert('Award approval is the final e-gate; the LOA generates on approval.\n\nPreview the Letter of Acceptance from the Analysis header (LOA button).')}
+                style={{border:`1px solid ${g.done?'rgba(30,127,79,.25)':'rgba(176,124,26,.35)'}`,background:g.done?'rgba(30,127,79,.05)':'rgba(176,124,26,.07)',padding:'10px 12px',cursor:g.done?'default':'pointer'}}>
                 <div style={{fontSize:14,marginBottom:4,color:g.done?C.green:C.gold,fontWeight:700}}>{g.done?'✓':'●'}</div>
                 <div style={{fontSize:12,fontWeight:600,color:C.navy}}>{g.label}</div>
-                <div style={{fontSize:11,color:g.done?C.gray500:C.gold,marginTop:2,fontVariantNumeric:'tabular-nums'}}>{g.date}</div>
+                <div style={{fontSize:11,color:g.done?C.gray500:C.gold,marginTop:2,fontVariantNumeric:'tabular-nums'}}>{g.date}{!g.done&&' →'}</div>
               </div>
             ))}
           </div>
-          <div style={{marginTop:12,fontSize:12,color:C.gray400}}>Each gate is an e-approval recorded in the audit log.</div>
+          <div style={{marginTop:12,fontSize:12,color:C.gray400}}>Each gate is an e-approval recorded in the audit log. Hover a gate for the approver and timestamp.</div>
         </Card>
         <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:20}}>
           <div style={{display:'flex',flexDirection:'column',gap:16}}>
@@ -1411,7 +1638,7 @@ function TenderDetail({tender, setPage}) {
           </div>
           {[
             {name:'ITT Letter',vol:'—',type:'PDF',size:'1.2 MB',issued:'28 Feb 2026',ret:false,live:true},
-            {name:'Instructions to Tenderers',vol:'Vol 1',type:'PDF',size:'3.4 MB',issued:'28 Feb 2026',ret:false,live:false},
+            {name:'Instructions to Tenderers',vol:'Vol 1',type:'PDF',size:'3.4 MB',issued:'28 Feb 2026',ret:false,live:true},
             {name:'Form of Tender',vol:'Vol 1',type:'PDF',size:'320 KB',issued:'28 Feb 2026',ret:true,live:false},
             {name:'General Conditions of Contract',vol:'Vol 1',type:'PDF',size:'2.1 MB',issued:'28 Feb 2026',ret:false,live:false},
             {name:'Particular Conditions',vol:'Vol 1',type:'PDF',size:'1.6 MB',issued:'28 Feb 2026',ret:false,live:false},
@@ -1435,7 +1662,7 @@ function TenderDetail({tender, setPage}) {
               </div>
               <div style={{textAlign:'right'}}>{d.live
                 ? <Btn variant="outline" style={{fontSize:11,padding:'5px 10px'}} onClick={d.action==='boq'?downloadPricingBOQ:downloadTenderPDF}>⬇ Download</Btn>
-                : <Btn variant="outline" style={{fontSize:11,padding:'5px 10px',opacity:.55,cursor:'default'}}>⬇ Download</Btn>}
+                : <Btn variant="outline" style={{fontSize:11,padding:'5px 10px',opacity:.75}} onClick={()=>alert('Demo build: sample file not attached. The ITT, Instructions and BOQ pricing copy generate live.')}>⬇ Download</Btn>}
               </div>
             </div>
           ))}
@@ -1611,6 +1838,7 @@ function AnalysisView({setPage}) {
     if(!val) return {bg:'rgba(179,54,43,.08)',color:'#B3362B'};
     const rowRates = rates.filter(r=>r>0);
     const min = Math.min(...rowRates), max = Math.max(...rowRates);
+    if(min===max) return {bg:'transparent',color:C.gray700}; // locked PS/DW rows carry identical values
     if(val===min) return {bg:'rgba(30,127,79,.1)',color:'#1E7F4F'};
     if(val===max) return {bg:'rgba(179,54,43,.1)',color:'#B3362B'};
     return {bg:'transparent',color:C.gray700};
@@ -1618,7 +1846,7 @@ function AnalysisView({setPage}) {
 
   // Section totals: per contractor, sum of qty x rate for member items (0 = unpriced item in section)
   const sectionRows = SECTION_MAP.map(sec=>{
-    const items = BOQ_ITEMS.filter(it=>sec.codes.includes(it.code));
+    const items = sectionItems(sec);
     const totals = [0,1,2,3].map(ci=>items.reduce((sum,it)=>sum + (it.rates[ci]>0 ? it.qty*it.rates[ci] : 0),0));
     const complete = [0,1,2,3].map(ci=>items.every(it=>it.rates[ci]>0));
     return {name:sec.name,items,totals,complete};
@@ -1642,7 +1870,8 @@ function AnalysisView({setPage}) {
           <Badge key="env" color="teal">Fast-track · Single envelope</Badge>,
           <Btn key="e" variant="outline" onClick={downloadComparisonExcel}>⬇ Export Excel</Btn>,
           <Btn key="a" variant="outline" onClick={downloadAnalysisPDF}>⬇ Analysis Report</Btn>,
-          <Btn key="p" onClick={downloadAwardRecommendationPDF}>⬇ Recommendation for Award</Btn>
+          <Btn key="p" onClick={downloadAwardRecommendationPDF}>⬇ Recommendation for Award</Btn>,
+          <Btn key="loa" variant="navy" onClick={downloadLOAPDF}>⬇ LOA</Btn>
         ]}
       />
       {/* Opening-day proof strip */}
@@ -1659,11 +1888,14 @@ function AnalysisView({setPage}) {
           {label:'Spread (L–H)',val:spread+'%',sub:'Opportunity to negotiate',color:C.gold},
           {label:'vs Budget',val:(vsbudget>0?'+':'')+vsbudget+'%',sub:'AED '+Number(BUDGET).toLocaleString(),color:parseFloat(vsbudget)<0?C.green:C.red},
         ].map((s,i)=>(
-          <Card key={i} style={{padding:18}}>
-            <div style={{fontSize:12,color:C.gray500,marginBottom:4}}>{s.label}</div>
+          <div key={i} title="View the comparison matrix" onClick={()=>{setActiveTab('matrix');setMatrixView('summary');}}
+            onMouseEnter={e=>{e.currentTarget.style.background='rgba(176,97,26,.05)';e.currentTarget.style.borderColor=C.blue;}}
+            onMouseLeave={e=>{e.currentTarget.style.background='white';e.currentTarget.style.borderColor=C.gray200;}}
+            style={{background:'white',border:`1px solid ${C.gray200}`,padding:18,cursor:'pointer',transition:'all .15s'}}>
+            <div style={{fontSize:12,color:C.gray500,marginBottom:4}}>{s.label} <span style={{color:C.blue,fontWeight:700}}>→</span></div>
             <div style={{fontFamily:HEAD_FONT,fontSize:24,fontWeight:900,color:s.color,letterSpacing:'-0.5px'}}>{s.val}</div>
             <div style={{fontSize:11,color:C.gray400,marginTop:4}}>{s.sub}</div>
-          </Card>
+          </div>
         ))}
       </div>
 
@@ -1721,6 +1953,7 @@ function AnalysisView({setPage}) {
                       {sec.totals.map((t,ci)=>{
                         const incomplete = !sec.complete[ci];
                         const cc = incomplete ? {bg:'rgba(179,54,43,.08)',color:'#B3362B'}
+                          : lo===hi ? {bg:'transparent',color:C.gray700}
                           : t===lo ? {bg:'rgba(30,127,79,.1)',color:'#1E7F4F'}
                           : t===hi ? {bg:'rgba(179,54,43,.1)',color:'#B3362B'}
                           : {bg:'transparent',color:C.gray700};
@@ -1765,7 +1998,7 @@ function AnalysisView({setPage}) {
                 </tr>
               </thead>
               <tbody>
-                {BOQ_ITEMS.filter(it=>SECTION_MAP[detailSection].codes.includes(it.code)).map((item,i)=>{
+                {sectionItems(SECTION_MAP[detailSection]).map((item,i)=>{
                   const validRates = item.rates.filter(r=>r>0);
                   const lo = Math.min(...validRates), hi = Math.max(...validRates);
                   const sp = ((hi-lo)/lo*100).toFixed(0);
@@ -1925,9 +2158,9 @@ function AnalysisView({setPage}) {
       {activeTab==='risks' && (
         <div style={{display:'flex',flexDirection:'column',gap:12}}>
           {[
-            {sev:'high',title:'Missing rate: Lifts & Escalators',detail:'Crescent Gulf Engineering submitted no rate for item 07.001 (Lifts & Escalators, 8 units). This is a significant scope gap. Clarification required before award.',contractor:'Crescent Gulf Engineering',val:'AED 1,800,000+ exposure'},
+            {sev:'high',title:'Missing rate: Lifts & Escalators',detail:'Crescent Gulf Engineering submitted no rate for item P.01 (Lifts & Escalators, 8 units). This is a significant scope gap. Clarification required before award.',contractor:'Crescent Gulf Engineering',val:'AED 1,800,000+ exposure'},
             {sev:'medium',title:'HVAC rate outlier: Atlas Construction Group',detail:'Atlas Construction Group HVAC rate (AED 2,400,000) is 14.3% above the median. Investigate whether this reflects a scope difference or pricing error.',contractor:'Atlas Construction Group',val:'AED 300,000 above median'},
-            {sev:'medium',title:'Large spread on RC Columns: 13.5%',detail:'Rate spread for RC Columns & Shear Walls exceeds 10%. Meridian at AED 1,850 vs Stonebridge at AED 2,100/m³. Verify specification assumptions are consistent.',contractor:'All contractors',val:'AED 225,000 total spread'},
+            {sev:'medium',title:'Large spread on RC Columns: 13.5%',detail:'Rate spread for RC Columns & Shear Walls (C.03) exceeds 10%. Meridian at AED 1,850 vs Stonebridge at AED 2,100/m³. Verify specification assumptions are consistent.',contractor:'All contractors',val:'AED 225,000 total spread'},
             {sev:'low',title:'Programme submitted by 3 of 4 contractors',detail:"Crescent Gulf Engineering did not submit a construction programme. This was a 'required' submission item. Request before advancing to award.",contractor:'Crescent Gulf Engineering',val:'Compliance gap'},
           ].map((r,i)=>(
             <Card key={i} style={{borderLeft:`3px solid ${r.sev==='high'?C.red:r.sev==='medium'?C.gold:C.blue}`,padding:'16px 20px'}}>
@@ -1947,7 +2180,8 @@ function AnalysisView({setPage}) {
             </Card>
           ))}
           <div style={{padding:'12px 14px',background:C.gray50,border:`1px solid ${C.gray200}`,fontSize:12,color:C.gray500}}>
-            These flags are not chased individually. Every flag is compiled into the relevant tenderer's standard negotiation pack, so all tenderers respond to the same structure on the same deadline. See the Negotiation Packs tab.
+            These flags are not chased individually. Every flag is compiled into the relevant tenderer's standard negotiation pack, so all tenderers respond to the same structure on the same deadline.{' '}
+            <span onClick={()=>setActiveTab('packs')} style={{color:C.blue,fontWeight:700,cursor:'pointer',textDecoration:'underline'}}>Open the Negotiation Packs tab →</span>
           </div>
         </div>
       )}
@@ -2004,6 +2238,18 @@ function ContractorsPage() {
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
   const [expanded, setExpanded] = useState(null);
+  const [rows, setRows] = useState(DEMO_CONTRACTORS);
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({name:'',trade:'Main Contractor',contact:'',phone:'',grade:'B'});
+  const setAdd = (k,v) => setAddForm(f=>({...f,[k]:v}));
+  const canAdd = addForm.name.trim()!=='' && addForm.contact.trim()!=='';
+  function handleAdd(){
+    if(!canAdd) return;
+    const nextId = Math.max(...rows.map(r=>r.id))+1;
+    setRows(rs=>[...rs,{id:nextId,name:addForm.name.trim(),grade:addForm.grade,trade:addForm.trade,disciplines:[addForm.trade],region:'Dubai',status:'pending',contact:addForm.contact.trim(),email:'',phone:addForm.phone.trim()||'—',prequalified:false,stars:3.0,type:'contractor'}]);
+    setAddForm({name:'',trade:'Main Contractor',contact:'',phone:'',grade:'B'});
+    setShowAdd(false);
+  }
   const chips = [
     {id:'all',label:'All'},
     {id:'contractor',label:'Contractors'},
@@ -2011,7 +2257,7 @@ function ContractorsPage() {
     {id:'approved',label:'Approved'},
     {id:'pending',label:'Pending'},
   ];
-  const filtered = DEMO_CONTRACTORS.filter(c=>{
+  const filtered = rows.filter(c=>{
     if(filter==='all') return true;
     if(filter==='contractor'||filter==='consultant') return c.type===filter;
     return c.status===filter;
@@ -2037,14 +2283,51 @@ function ContractorsPage() {
     if(sortKey===key) setSortDir(d=>d==='asc'?'desc':'asc');
     else { setSortKey(key); setSortDir('asc'); }
   };
-  const nContractors = DEMO_CONTRACTORS.filter(c=>c.type==='contractor').length;
-  const nConsultants = DEMO_CONTRACTORS.filter(c=>c.type==='consultant').length;
-  const nApproved = DEMO_CONTRACTORS.filter(c=>c.status==='approved').length;
-  const nPending = DEMO_CONTRACTORS.filter(c=>c.status==='pending').length;
+  const nContractors = rows.filter(c=>c.type==='contractor').length;
+  const nConsultants = rows.filter(c=>c.type==='consultant').length;
+  const nApproved = rows.filter(c=>c.status==='approved').length;
+  const nPending = rows.filter(c=>c.status==='pending').length;
   return (
     <div>
       <TopBar title="Contractor Database" sub={`${nContractors} contractors · ${nConsultants} consultants · ${nApproved} approved · ${nPending} pending review`}
-        actions={[<Btn key="add">+ Add Contractor</Btn>]}/>
+        actions={[<Btn key="add" onClick={()=>setShowAdd(s=>!s)}>{showAdd?'Close form':'+ Add Contractor'}</Btn>]}/>
+      {showAdd && (
+        <Card style={{marginBottom:20,borderTop:`3px solid ${C.blue}`}}>
+          <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:4}}>Add Contractor</div>
+          <div style={{fontSize:12,color:C.gray500,marginBottom:16}}>New vendors enter as Pending until PQQ documents are reviewed and approved.</div>
+          <div style={{display:'grid',gridTemplateColumns:'2fr 1.4fr 1.4fr 1.2fr 90px',gap:12,alignItems:'end'}}>
+            {[
+              {label:'Company Name',key:'name',placeholder:'e.g. Palm Ridge Contracting LLC'},
+              {label:'Contact Person',key:'contact',placeholder:'Full name'},
+              {label:'Contact Number',key:'phone',placeholder:'+971 5x xxx xxxx'},
+            ].map(f=>(
+              <div key={f.key} style={{display:'flex',flexDirection:'column',gap:5}}>
+                <label style={{fontSize:11,fontWeight:700,color:C.gray700,textTransform:'uppercase',letterSpacing:'.06em'}}>{f.label}</label>
+                <input value={addForm[f.key]} onChange={e=>setAdd(f.key,e.target.value)} placeholder={f.placeholder}
+                  style={{padding:'9px 11px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.text,outline:'none'}}/>
+              </div>
+            ))}
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              <label style={{fontSize:11,fontWeight:700,color:C.gray700,textTransform:'uppercase',letterSpacing:'.06em'}}>Trade</label>
+              <select value={addForm.trade} onChange={e=>setAdd('trade',e.target.value)}
+                style={{padding:'9px 11px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.navy,background:'white',outline:'none'}}>
+                {['Main Contractor','MEP','Fit-out','Facades','Civil','Structural'].map(t=><option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:5}}>
+              <label style={{fontSize:11,fontWeight:700,color:C.gray700,textTransform:'uppercase',letterSpacing:'.06em'}}>Grade</label>
+              <select value={addForm.grade} onChange={e=>setAdd('grade',e.target.value)}
+                style={{padding:'9px 11px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.navy,background:'white',outline:'none'}}>
+                {['A','B','C'].map(g=><option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:16,paddingTop:14,borderTop:`1px solid ${C.gray100}`}}>
+            <Btn variant="outline" onClick={()=>setShowAdd(false)}>Cancel</Btn>
+            <Btn disabled={!canAdd} onClick={handleAdd}>Add to Database</Btn>
+          </div>
+        </Card>
+      )}
       <div style={{display:'flex',gap:8,marginBottom:20}}>
         {chips.map(f=>(
           <div key={f.id} onClick={()=>setFilter(f.id)} style={{
@@ -2174,11 +2457,11 @@ function AuditLog() {
 
 // ── CONTRACTOR ROUND 1 QUERY-RESPONSE SCREEN ──────────────────────────
 const R1_ROWS = [
-  {ref:'03.003',cat:'Missing item',finding:'Unpriced: Movement joints to blockwork, 420 m. Field median AED 18.50. Price the item or confirm inclusion within your rates.',defaultType:'Confirm inclusion'},
-  {ref:'05.004',cat:'Missing item',finding:'Unpriced: Porcelain skirting to corridors, 1,150 m. Field median AED 32.00. Price the item or confirm inclusion within your rates.',defaultType:'Revise rate'},
-  {ref:'02.002',cat:'Low rate',finding:'RC Columns & Shear Walls at AED 1,850/m³ vs field median 1,960 (−5.6%). Confirm full scope coverage at this rate.',defaultType:'Substantiate'},
-  {ref:'04.002',cat:'Low rate',finding:'Electrical HV/LV Works at AED 1,450,000 vs field median 1,470,000 (−1.4%). Confirm the cable specification allowed.',defaultType:'Substantiate'},
-  {ref:'06.001',cat:'Low rate',finding:'Curtain Wall & Glazing at AED 680/m² vs field median 708 (−3.9%). Confirm the DGU Low-E specification is covered.',defaultType:'Substantiate'},
+  {ref:'D.06',cat:'Missing item',finding:'Unpriced: Movement joints to blockwork, 420 m. Field median AED 18.50. Price the item or confirm inclusion within your rates.',defaultType:'Confirm inclusion'},
+  {ref:'J.09',cat:'Missing item',finding:'Unpriced: Porcelain skirting to corridors, 1,150 m. Field median AED 32.00. Price the item or confirm inclusion within your rates.',defaultType:'Revise rate'},
+  {ref:'C.03',cat:'Low rate',finding:'RC Columns & Shear Walls at AED 1,850/m³ vs field median 1,960 (−5.6%). Confirm full scope coverage at this rate.',defaultType:'Substantiate'},
+  {ref:'R.01',cat:'Low rate',finding:'Electrical HV/LV Works at AED 1,450,000 vs field median 1,470,000 (−1.4%). Confirm the cable specification allowed.',defaultType:'Substantiate'},
+  {ref:'H.01',cat:'Low rate',finding:'Curtain Wall & Glazing at AED 680/m² vs field median 708 (−3.9%). Confirm the DGU Low-E specification is covered.',defaultType:'Substantiate'},
   {ref:'Q1',cat:'Qualification',finding:'Dewatering assumed not required. Withdraw the qualification, or price dewatering as a fixed inclusion.',defaultType:'Withdraw qualification'},
 ];
 const R1_TYPES = ['Revise rate','Substantiate','Confirm inclusion','Withdraw qualification'];
@@ -2386,7 +2669,7 @@ function ContractorPortal({setPage}) {
                 'Template checksum verified',
                 'Structure unmodified',
                 'Arithmetic check: passed (0 casting errors)',
-                'Unpriced items: 0 of 1,032',
+                'Unpriced items: 0 of '+BOQ_ITEMS.length,
                 'Receipt RCT-2841-7F2A issued, bid sealed',
               ].map((line,i)=>(
                 <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0',fontSize:13,color:C.navy}}>
