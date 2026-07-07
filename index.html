@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body,#root{height:100%;font-family:'Inter',-apple-system,sans-serif;background:#FAF8F4;color:#101418;-webkit-font-smoothing:antialiased}
@@ -51,6 +52,19 @@ const DEMO_CONTRACTORS = [
   {id:8,name:'Gulf QS Partners',grade:'A',trade:'Quantity Surveying',disciplines:['Quantity Surveying'],region:'Dubai / Abu Dhabi',status:'approved',contact:'James Okafor',email:'j.okafor@gulfqs.ae',phone:'+971 55 236 9083',prequalified:true,stars:4.5,type:'consultant'},
   {id:9,name:'Horizon Supervision Consultants',grade:'B',trade:'Site Supervision',disciplines:['Site Supervision'],region:'UAE',status:'pending',contact:'Leila Haddad',email:'l.haddad@horizonsc.ae',phone:'+971 52 874 6630',prequalified:false,stars:3.9,type:'consultant'},
 ];
+
+// PQQ summary per vendor (keyed by DEMO_CONTRACTORS id). Date flags: 'expired' | 'soon' | null
+const PQQ_DATA = {
+  1:{licence:'CN-1187342',licenceExp:{v:'14 Feb 2027',flag:null},insurance:{v:'30 Sep 2026',flag:null},financial:'AED 100-250M turnover band',projects:34,trir:'0.42',qms:'ISO 9001:2015',approved:'12 Jan 2026',review:'12 Jan 2027'},
+  2:{licence:'CN-0865221',licenceExp:{v:'03 Nov 2026',flag:null},insurance:{v:'22 May 2026',flag:'soon'},financial:'AED 100-250M turnover band',projects:28,trir:'0.61',qms:'ISO 9001:2015',approved:'20 Jan 2026',review:'20 Jan 2027'},
+  3:{licence:'CN-1298430',licenceExp:{v:'08 Aug 2026',flag:null},insurance:{v:'15 Dec 2026',flag:null},financial:'AED 50-100M turnover band',projects:19,trir:'0.55',qms:'ISO 9001:2015',approved:'02 Feb 2026',review:'02 Feb 2027'},
+  4:{licence:'CN-0774105',licenceExp:{v:'27 Jun 2027',flag:null},insurance:{v:'09 Oct 2026',flag:null},financial:'AED 100-250M turnover band',projects:31,trir:'0.48',qms:'ISO 9001:2015',approved:'18 Dec 2025',review:'18 Dec 2026'},
+  5:{licence:'CN-0921678',licenceExp:{v:'19 Apr 2026',flag:'soon'},insurance:{v:'30 Jul 2026',flag:null},financial:'AED 50-100M turnover band',projects:14,trir:'0.77',qms:'ISO 9001:2015',approved:'25 Nov 2025',review:'25 Nov 2026'},
+  6:{licence:'CN-1330964',licenceExp:{v:'11 Sep 2026',flag:null},insurance:{v:'31 Jan 2026',flag:'expired'},financial:'AED 10-50M turnover band',projects:8,trir:'1.24',qms:'ISO 9001:2015 (surveillance audit due)',approved:'Not approved',review:'On hold pending insurance renewal'},
+  7:{licence:'CN-0688412',licenceExp:{v:'05 Mar 2027',flag:null},insurance:{v:'12 Nov 2026',flag:null},financial:'AED 10-50M fee income band',projects:46,trir:'0.10',qms:'ISO 9001:2015',approved:'08 Jan 2026',review:'08 Jan 2027'},
+  8:{licence:'CN-0755903',licenceExp:{v:'21 Jan 2027',flag:null},insurance:{v:'04 Aug 2026',flag:null},financial:'AED 10-50M fee income band',projects:52,trir:'0.08',qms:'ISO 9001:2015',approved:'15 Jan 2026',review:'15 Jan 2027'},
+  9:{licence:'CN-1402517',licenceExp:{v:'30 May 2026',flag:'soon'},insurance:{v:'18 Jun 2026',flag:'soon'},financial:'AED 1-10M fee income band',projects:11,trir:'0.35',qms:'ISO 9001:2015',approved:'Under review',review:'Pending PQQ approval'},
+};
 
 const BOQ_ITEMS = [
   {code:'01.001',desc:'Excavation & Earthworks',unit:'m³',qty:6800,rates:[40,56,38,39],budget:269000},
@@ -445,6 +459,7 @@ function downloadAnalysisPDF(){
 const RECEIPTS = ['RCT-2841-7F2A','RCT-2938-9C41','RCT-3035-3B08','RCT-3132-E65D'];
 const NEG_DATA = [
   { flags:7, prelims:8.2, ohp:5.3, arithmetic:{delta:'+12,400',corrected:'18,252,400',rows:[['02.002','RC Columns: extension error, qty x rate','+9,150'],['05.001','Floor tiling: page total rounding','+3,250']]},
+    casting:[['C Concrete Work','+9,150'],['J Finishes','+3,250']],
     missing:[['03.003','Movement joints to blockwork','m','420','18.50','7,770'],['05.004','Porcelain skirting to corridors','m','1,150','32.00','36,800']],
     high:[],
     low:[['02.002','RC Columns & Shear Walls','1,850/m³','1,960','−5.6%','Confirm scope coverage at this rate'],['04.002','Electrical HV/LV Works','1,450,000','1,470,000','−1.4%','Confirm cable specification allowed'],['06.001','Curtain Wall & Glazing','680/m²','708','−3.9%','Confirm DGU Low-E specification']],
@@ -452,6 +467,7 @@ const NEG_DATA = [
     psFlag:null,
     quals:[['Q1','Dewatering assumed not required','Withdraw, or price as a fixed inclusion']] },
   { flags:9, prelims:9.1, ohp:6.6, arithmetic:{delta:'0',corrected:'19,100,000',rows:[['—','No arithmetic errors identified','0']]},
+    casting:[['All sections cast correctly','0']],
     missing:[['07.001','Lifts & Escalators (8 units)','sum','1','1,850,000','1,850,000+']],
     high:[['02.003','RC Beams & Slabs','2,150/m³','1,760','+22.2%','Substantiate or revise'],['03.002','Internal Plaster & Skim','62/m²','47','+31.9%','Substantiate or revise'],['04.003','Plumbing & Drainage','1,080,000','930,000','+16.1%','Substantiate or revise']],
     low:[],
@@ -459,6 +475,7 @@ const NEG_DATA = [
     psFlag:'PS-02 Contingency has been reduced from the issued value. Provisional sums are client-directed and must be carried as issued. Reinstate to AED 500,000 in your revised submission.',
     quals:[['Q1','Construction programme not submitted','Mandatory item: submit with your response'],['Q2','Lifts excluded from offer','Unacceptable: price item 07.001 or confirm inclusion']] },
   { flags:6, prelims:11.4, ohp:5.7, arithmetic:{delta:'−8,200',corrected:'19,631,800',rows:[['06.001','Curtain wall: duplicated carry-forward','−8,200']]},
+    casting:[['H Doors, Windows & Facade','−8,200']],
     missing:[],
     high:[['02.002','RC Columns & Shear Walls','2,100/m³','1,960','+7.1%','Substantiate or revise']],
     low:[['06.002','Entrance Feature Canopy','175,000','187,500','−6.7%','Confirm scope coverage'],['04.002','Electrical HV/LV Works','1,380,000','1,470,000','−6.1%','Confirm scope coverage']],
@@ -466,6 +483,7 @@ const NEG_DATA = [
     psFlag:null,
     quals:[['Q1','Steel price fluctuation rider','Withdraw: lump sum contract, no fluctuation provisions']] },
   { flags:8, prelims:12.8, ohp:7.8, arithmetic:{delta:'0',corrected:'20,450,000',rows:[['—','No arithmetic errors identified','0']]},
+    casting:[['All sections cast correctly','0']],
     missing:[],
     high:[['04.001','Chilled Water System (HVAC)','2,400,000','2,100,000','+14.3%','Substantiate or revise: ~300,000 above median'],['05.001','Porcelain Floor Tiling','145/m²','129','+12.4%','Substantiate or revise']],
     low:[],
@@ -474,6 +492,137 @@ const NEG_DATA = [
     quals:[['Q1','HVAC based on alternative manufacturer','Confirm compliance with specified performance or revert to specified system']] },
 ];
 const AT_STYLE = {theme:'grid',styles:{fontSize:7.5,textColor:[16,20,24],lineColor:[216,210,198],lineWidth:0.2,cellPadding:2},headStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontSize:7.5,fontStyle:'bold'},alternateRowStyles:{fillColor:[250,248,244]}};
+
+// ── TECHNICAL EVALUATION (criteria frozen at issue; fast-track demonstration scores) ──
+const TECH_CRITERIA = [
+  {name:'Methodology & Programme',weight:30,scores:[8.5,7.0,9.0,8.0]},
+  {name:'HSE record & plan',weight:20,scores:[8.0,7.5,9.0,7.5]},
+  {name:'Key personnel & organisation',weight:20,scores:[8.5,7.0,8.5,8.0]},
+  {name:'Relevant experience',weight:20,scores:[8.5,7.0,9.0,7.5]},
+  {name:'QMS/EMS certifications',weight:10,scores:[8.5,7.0,9.0,8.0]},
+];
+const TECH_TOTALS = [8.4,7.1,8.9,7.8]; // weighted totals /10 (Meridian, Crescent, Stonebridge, Atlas)
+const TECH_THRESHOLD = 70; // qualifying threshold in %
+
+// ── PDF: TECHNICAL EVALUATION REPORT (TER) ────────────────────────────
+function downloadTechnicalEvaluationPDF(){
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:'mm',format:'a4'});
+  const names=CONTRACTORS_BIDDING.map(c=>c.shortName);
+  // Page 1: criteria + score matrix
+  let y=pdfBrandedHeader(doc,'Technical Evaluation Report','Marina Views Main Works · T-2026-001 · Document Ref: T-2026-001-TER · Revision 0');
+  doc.setFontSize(8);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('Conventional route: technical envelopes are evaluated and approved before commercial envelopes unseal. This tender ran fast-track; scores shown for demonstration.',180),15,y+2);y+=12;
+  y=pdfSectionLabel(doc,'1. EVALUATION CRITERIA AND WEIGHTINGS (FROZEN AT ISSUE)',y);
+  doc.autoTable({startY:y,head:[['Criterion','Weighting']],
+    body:TECH_CRITERIA.map(c=>[c.name,c.weight+'%']),
+    foot:[['TOTAL','100%']],footStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontStyle:'bold',fontSize:7.5},
+    columnStyles:{1:{halign:'right',cellWidth:30}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+10;
+  y=pdfSectionLabel(doc,'2. SCORE MATRIX (ALL SCORES OUT OF 10)',y);
+  doc.autoTable({startY:y,head:[['Criterion','Weight',...names]],
+    body:TECH_CRITERIA.map(c=>[c.name,c.weight+'%',...c.scores.map(s=>s.toFixed(1))]),
+    foot:[['WEIGHTED TOTAL (/10)','100%',...TECH_TOTALS.map(t=>t.toFixed(1))],
+          ['WEIGHTED TOTAL (%)','',...TECH_TOTALS.map(t=>(t*10).toFixed(0)+'%')]],
+    footStyles:{fillColor:[16,20,24],textColor:[255,255,255],fontStyle:'bold',fontSize:7.5},
+    columnStyles:{1:{halign:'right',cellWidth:16},2:{halign:'right'},3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+10;
+  y=pdfSectionLabel(doc,'3. QUALIFICATION STATEMENT',y);
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('Qualifying threshold: '+TECH_THRESHOLD+'%. All four tenderers scored at or above the qualifying threshold and qualified for commercial opening. No tenderer was excluded on technical grounds.',180),15,y+3);
+  // Page 2: approvals
+  doc.addPage();
+  y=pdfBrandedHeader(doc,'Technical Evaluation Report: Approvals','Marina Views Main Works · T-2026-001-TER · Revision 0');
+  y=pdfSectionLabel(doc,'4. EVALUATION PANEL STATEMENT',y);
+  doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','normal');
+  doc.text(doc.splitTextToSize('The evaluation panel confirms that each submission was scored independently against the criteria and weightings frozen at tender issue, before any commercial information was available to the panel. Scores were moderated in a single recorded session and the moderated scores are final.',180),15,y+3);y+=22;
+  y=pdfSectionLabel(doc,'5. APPROVAL SIGNATURES',y);
+  [['Technical evaluator (Engineering)','Sofia Marchetti'],['Technical evaluator (QS)','Rania Al Hajji'],['Reviewed by (Project Manager)',''],['Approved by (Client Representative)','']].forEach(([role,name])=>{
+    doc.setFontSize(8.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');doc.text(role,15,y+5);
+    doc.setDrawColor(16,20,24);doc.line(85,y+6,150,y+6);doc.line(160,y+6,195,y+6);
+    doc.setFontSize(7);doc.setTextColor(138,129,119);doc.text(name||'Signature',85,y+10);doc.text('Date',160,y+10);
+    y+=16;
+  });
+  const pcT=doc.getNumberOfPages();
+  for(let i=1;i<=pcT;i++){doc.setPage(i);pdfFooter(doc,i,pcT);}
+  doc.save('Tenderbox_T-2026-001_Technical_Evaluation_Report.pdf');
+}
+
+// ── EXCEL: LOCKED BOQ PRICING COPY ────────────────────────────────────
+function downloadPricingBOQ(){
+  const XL=window.XLSX; const wb=XL.utils.book_new();
+  // Sheet 1: Instructions
+  const wsI=XL.utils.aoa_to_sheet([
+    ['TENDERBOX · BOQ PRICING COPY'],
+    ['Tender: T-2026-001 · Marina Views Tower, Main Construction Works · BOQ Revision 0'],
+    [],
+    ['HOW TO PRICE THIS BILL'],
+    ['1. Enter your rate in the Rate (AED) column on the BOQ sheet. Only Rate cells are editable.'],
+    ['2. Amounts and the bill total are calculated automatically. Do not overwrite formulas.'],
+    ['3. Provisional sums (PS-01, PS-02) are client-directed, pre-filled and locked. Carry them as issued.'],
+    ['4. Dayworks and structure rows are locked. Do not add, delete, hide or reorder rows or columns.'],
+    ['5. Any item left unpriced is deemed included within your other rates.'],
+    ['6. A checksum validates the file structure at upload. A modified structure is rejected at submission.'],
+    [],
+    ['Structure locked · Rate column only'],
+  ]);
+  wsI['!cols']=[{wch:105}];
+  wsI['!protect']={password:undefined,selectLockedCells:true,selectUnlockedCells:true};
+  XL.utils.book_append_sheet(wb,wsI,'Instructions');
+  // Sheet 2: BOQ
+  const aoa=[
+    ['Tenderbox · T-2026-001 · BOQ Pricing Copy · Revision 0'],
+    ['Structure locked · Rate column only'],
+    [],
+    ['Code','Description','Unit','Qty','Rate (AED)','Amount (AED)'],
+  ];
+  BOQ_ITEMS.forEach(it=>aoa.push([it.code,it.desc,it.unit,it.qty,null,null]));
+  aoa.push(['PS-01','Signage & Wayfinding (Provisional Sum, as issued)','sum',1,150000,150000]);
+  aoa.push(['PS-02','Contingency, Client (Provisional Sum, as issued)','sum',1,500000,500000]);
+  aoa.push(['','TOTAL LUMP SUM BID VALUE (AED)','','',null,null]);
+  const ws=XL.utils.aoa_to_sheet(aoa);
+  const firstRow=5, lastRow=firstRow+BOQ_ITEMS.length+1; // items then 2 PS rows (1-based)
+  BOQ_ITEMS.forEach((it,i)=>{const r=firstRow+i;ws['F'+r]={t:'n',f:'E'+r+'*D'+r};});
+  ws['F'+(lastRow+1)]={t:'n',f:'SUM(F'+firstRow+':F'+lastRow+')'};
+  ws['!cols']=[{wch:9},{wch:46},{wch:7},{wch:9},{wch:14},{wch:16}];
+  // Cell-level unlock flags may not survive community SheetJS; sheet protection set, plus visible header note above
+  ws['!protect']={password:undefined,selectLockedCells:true,selectUnlockedCells:true};
+  XL.utils.book_append_sheet(wb,ws,'BOQ');
+  // Sheet 3: hidden metadata
+  const wsM=XL.utils.aoa_to_sheet([
+    ['tender_id','T-2026-001'],
+    ['contractor','{{CONTRACTOR_NAME}}'],
+    ['boq_revision','Rev 0 · Issued 28 Feb 2026'],
+    ['checksum','TBX-CHK-9f4e2a71c8d05b36'],
+  ]);
+  XL.utils.book_append_sheet(wb,wsM,'_meta');
+  wb.Workbook={Sheets:[{Hidden:0},{Hidden:0},{Hidden:1}]};
+  XL.writeFile(wb,'Tenderbox_T-2026-001_BOQ_PricingCopy.xlsx');
+}
+
+// ── EXCEL: COMPARISON EXPORT (post-opening) ───────────────────────────
+function downloadComparisonExcel(){
+  const XL=window.XLSX; const wb=XL.utils.book_new();
+  const names=CONTRACTORS_BIDDING.map(c=>c.shortName);
+  // Sheet 1: Bill Summary (sections x contractors)
+  const sum=[['Bill Section','Items',...names.map(n=>n+' (AED)')]];
+  SECTION_MAP.forEach(sec=>{
+    const items=BOQ_ITEMS.filter(it=>sec.codes.includes(it.code));
+    const tots=[0,1,2,3].map(ci=>items.reduce((s,it)=>s+(it.rates[ci]>0?it.qty*it.rates[ci]:0),0));
+    sum.push([sec.name,items.length,...tots]);
+  });
+  sum.push(['TOTAL BID VALUE (AED)',BOQ_ITEMS.length,...TOTALS]);
+  const ws1=XL.utils.aoa_to_sheet(sum);
+  ws1['!cols']=[{wch:26},{wch:6},{wch:14},{wch:14},{wch:14},{wch:14}];
+  XL.utils.book_append_sheet(wb,ws1,'Bill Summary');
+  // Sheet 2: Detail (all BOQ line items x contractor amounts)
+  const det=[['Code','Description','Unit','Qty',...names.map(n=>n+' Amount (AED)')]];
+  BOQ_ITEMS.forEach(it=>det.push([it.code,it.desc,it.unit,it.qty,...it.rates.map(r=>r*it.qty)]));
+  det.push(['','TOTAL BID VALUE (AED)','','',...TOTALS]);
+  const ws2=XL.utils.aoa_to_sheet(det);
+  ws2['!cols']=[{wch:9},{wch:38},{wch:7},{wch:9},{wch:16},{wch:16},{wch:16},{wch:16}];
+  XL.utils.book_append_sheet(wb,ws2,'Detail');
+  XL.writeFile(wb,'Tenderbox_T-2026-001_Comparison.xlsx');
+}
 
 // ── PDF: PER-CONTRACTOR NEGOTIATION PACK ──────────────────────────────
 function downloadNegotiationPack(ci){
@@ -504,7 +653,13 @@ function downloadNegotiationPack(ci){
   doc.autoTable({startY:y,head:[['Item','Finding','Adjustment (AED)']],body:d.arithmetic.rows,columnStyles:{2:{halign:'right'}},...AT_STYLE});
   y=doc.lastAutoTable.finalY+4;
   doc.setFontSize(8.5);doc.setTextColor(16,20,24);doc.setFont('helvetica','bold');
-  doc.text('Net adjustment: AED '+d.arithmetic.delta+'    ·    Corrected tender total: AED '+d.arithmetic.corrected,15,y+3);y+=12;
+  doc.text('Net adjustment: AED '+d.arithmetic.delta+'    ·    Corrected tender total: AED '+d.arithmetic.corrected,15,y+3);y+=10;
+  doc.setFontSize(8);doc.setTextColor(110,103,95);doc.setFont('helvetica','bold');
+  doc.text('Casting check by bill section',15,y+2);y+=4;
+  doc.autoTable({startY:y,head:[['Bill Section','Adjustment (AED)']],body:d.casting,columnStyles:{0:{cellWidth:120},1:{halign:'right'}},...AT_STYLE});
+  y=doc.lastAutoTable.finalY+4;
+  doc.setFontSize(7.5);doc.setTextColor(110,103,95);doc.setFont('helvetica','normal');
+  doc.text('Section adjustments cast to the net adjustment of AED '+d.arithmetic.delta+'. Sections not listed cast correctly.',15,y+2);y+=8;
   y=pdfSectionLabel(doc,'SECTION 2: MISSING / UNPRICED ITEMS',y);
   if(d.missing.length){
     doc.autoTable({startY:y,head:[['Code','Description','Unit','Qty','Field Median (AED)','Exposure (AED)']],body:d.missing,columnStyles:{3:{halign:'right'},4:{halign:'right'},5:{halign:'right'}},...AT_STYLE});
@@ -1007,7 +1162,7 @@ function CreateTender({setPage}) {
                     {id:'works',title:'Works',desc:'Construction works tendered against a priced bill of quantities'},
                     {id:'consultancy',title:'Consultancy Services',desc:'Professional services: design, supervision, quantity surveying'},
                   ].map(opt => (
-                    <div key={opt.id} onClick={()=>set('tenderType',opt.id)} style={{
+                    <div key={opt.id} onClick={()=>setForm(f=>({...f,tenderType:opt.id,requirements:opt.id==='consultancy'?{...f.requirements,fee:true,technical:true,cvs:true,pi:true,scope:true,confidentiality:true}:f.requirements}))} style={{
                       flex:1,padding:'12px 14px',borderRadius:0,cursor:'pointer',
                       border:`1px solid ${form.tenderType===opt.id?C.blue:C.gray200}`,
                       background:form.tenderType===opt.id?'rgba(176,97,26,.06)':'white',transition:'all .15s'
@@ -1052,9 +1207,15 @@ function CreateTender({setPage}) {
         {step===2 && (
           <div>
             <div style={{fontSize:16,fontWeight:700,color:C.navy,marginBottom:6}}>Submission Requirements</div>
-            <div style={{fontSize:13,color:C.gray500,marginBottom:20}}>Choose what contractors must submit. These become validation rules and appear in the audit report.</div>
+            <div style={{fontSize:13,color:C.gray500,marginBottom:20}}>
+              {form.tenderType==='consultancy'
+                ? 'Consultancy returnables: choose what tenderers must submit with their fee proposal. These become validation rules and appear in the audit report.'
+                : 'Choose what contractors must submit. These become validation rules and appear in the audit report.'}
+            </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              {Object.entries({site:'Site inspection confirmed',form:'Form of tender signed',addenda:'Addenda acknowledged',programme:'Construction programme',method:'Method statement',insurance:'Insurances certificate',exclusions:'Exclusions list',qa:'QA / HSE policies'}).map(([k,label]) => (
+              {Object.entries(form.tenderType==='consultancy'
+                ? {fee:'Fee Proposal (lump sum + drawdown schedule)',technical:'Technical Proposal & Methodology',cvs:'Key Team CVs & org chart',pi:'PI Insurance certificate',scope:'Scope of Services acknowledgement',confidentiality:'Confidentiality Agreement'}
+                : {site:'Site inspection confirmed',form:'Form of tender signed',addenda:'Addenda acknowledged',programme:'Construction programme',method:'Method statement',insurance:'Insurances certificate',exclusions:'Exclusions list',qa:'QA / HSE policies'}).map(([k,label]) => (
                 <div key={k} onClick={()=>setForm(f=>({...f,requirements:{...f.requirements,[k]:!f.requirements[k]}}))} style={{
                   display:'flex',alignItems:'center',gap:12,padding:'13px 14px',borderRadius:0,cursor:'pointer',
                   border:`1px solid ${form.requirements[k]?C.blue:C.gray200}`,
@@ -1256,7 +1417,7 @@ function TenderDetail({tender, setPage}) {
             {name:'Particular Conditions',vol:'Vol 1',type:'PDF',size:'1.6 MB',issued:'28 Feb 2026',ret:false,live:false},
             {name:'Schedules to Conditions',vol:'Vol 1',type:'PDF',size:'890 KB',issued:'28 Feb 2026',ret:true,live:false},
             {name:'General & Particular Specifications',vol:'Vol 2',type:'PDF',size:'18 MB',issued:'28 Feb 2026',ret:false,live:false},
-            {name:'Bill of Quantities: locked pricing copy',vol:'Vol 3',type:'Excel',size:'842 KB',issued:'28 Feb 2026',ret:true,live:false},
+            {name:'Bill of Quantities: locked pricing copy',vol:'Vol 3',type:'Excel',size:'842 KB',issued:'28 Feb 2026',ret:true,live:true,action:'boq'},
             {name:'Drawings Package Rev C',vol:'Vol 4',type:'ZIP',size:'48 MB',issued:'28 Feb 2026',ret:false,live:false},
             {name:'Addendum 01: Clarifications',vol:'—',type:'PDF',size:'214 KB',issued:'05 Mar 2026',ret:false,live:false},
             {name:'Confidentiality Agreement',vol:'—',type:'PDF',size:'180 KB',issued:'28 Feb 2026',ret:true,retLabel:'Signed at invitation',live:false},
@@ -1273,7 +1434,7 @@ function TenderDetail({tender, setPage}) {
                   : <Badge color="green" style={{fontSize:10}}>Issued</Badge>}
               </div>
               <div style={{textAlign:'right'}}>{d.live
-                ? <Btn variant="outline" style={{fontSize:11,padding:'5px 10px'}} onClick={downloadTenderPDF}>⬇ Download</Btn>
+                ? <Btn variant="outline" style={{fontSize:11,padding:'5px 10px'}} onClick={d.action==='boq'?downloadPricingBOQ:downloadTenderPDF}>⬇ Download</Btn>
                 : <Btn variant="outline" style={{fontSize:11,padding:'5px 10px',opacity:.55,cursor:'default'}}>⬇ Download</Btn>}
               </div>
             </div>
@@ -1479,7 +1640,7 @@ function AnalysisView({setPage}) {
         sub="Marina Views — Main Works · Opened 13 Mar 2026, 09:00"
         actions={[
           <Badge key="env" color="teal">Fast-track · Single envelope</Badge>,
-          <Btn key="e" variant="outline">⬇ Export Excel</Btn>,
+          <Btn key="e" variant="outline" onClick={downloadComparisonExcel}>⬇ Export Excel</Btn>,
           <Btn key="a" variant="outline" onClick={downloadAnalysisPDF}>⬇ Analysis Report</Btn>,
           <Btn key="p" onClick={downloadAwardRecommendationPDF}>⬇ Recommendation for Award</Btn>
         ]}
@@ -1508,12 +1669,12 @@ function AnalysisView({setPage}) {
 
       {/* Tabs */}
       <div style={{display:'flex',gap:4,borderBottom:`1px solid ${C.gray200}`,marginBottom:20}}>
-        {['matrix','negotiation','risks','packs'].map(t=>(
+        {['matrix','technical','negotiation','risks','packs'].map(t=>(
           <div key={t} onClick={()=>setActiveTab(t)} style={{
             padding:'8px 16px',fontSize:13,fontWeight:activeTab===t?600:400,cursor:'pointer',
             color:activeTab===t?C.blue:C.gray500,borderBottom:`2px solid ${activeTab===t?C.blue:'transparent'}`,
             textTransform:'capitalize',marginBottom:-1,transition:'all .15s'
-          }}>{t==='matrix'?'Comparison Matrix':t==='negotiation'?'Negotiation Schedules':t==='risks'?'Risk Flags':'Negotiation Packs'}</div>
+          }}>{t==='matrix'?'Comparison Matrix':t==='technical'?'Technical Evaluation':t==='negotiation'?'Negotiation Schedules':t==='risks'?'Risk Flags':'Negotiation Packs'}</div>
         ))}
       </div>
 
@@ -1628,6 +1789,75 @@ function AnalysisView({setPage}) {
             </table>
           </Card>
           )}
+        </div>
+      )}
+
+      {activeTab==='technical' && (
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <Card style={{background:C.navy,border:'none'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16,flexWrap:'wrap'}}>
+              <div style={{flex:1,minWidth:320}}>
+                <div style={{fontSize:12,fontWeight:700,color:C.sky,letterSpacing:1,textTransform:'uppercase',marginBottom:10}}>Technical Evaluation</div>
+                <div style={{fontSize:13,color:'rgba(255,255,255,.85)',lineHeight:1.65}}>
+                  Conventional route: technical envelopes are evaluated and approved before commercial envelopes unseal. This tender ran fast-track; scores shown for demonstration.
+                </div>
+              </div>
+              <Btn variant="outline" style={{fontSize:12,padding:'7px 14px',background:'white'}} onClick={downloadTechnicalEvaluationPDF}>⬇ TER</Btn>
+            </div>
+          </Card>
+          <Card style={{padding:0,overflow:'hidden'}}>
+            <div style={{padding:'12px 20px',background:C.gray50,borderBottom:`1px solid ${C.gray200}`,fontSize:13,fontWeight:700,color:C.navy}}>
+              Weighted criteria · frozen at issue
+            </div>
+            {TECH_CRITERIA.map((cr,i)=>(
+              <div key={i} style={{display:'grid',gridTemplateColumns:'1fr 90px',alignItems:'center',padding:'10px 20px',borderBottom:i<TECH_CRITERIA.length-1?`1px solid ${C.gray100}`:'none',background:i%2===0?'white':C.gray50}}>
+                <div style={{fontSize:13,fontWeight:500,color:C.navy}}>{cr.name}</div>
+                <div style={{textAlign:'right',fontSize:13,fontWeight:700,color:C.gray700,fontVariantNumeric:'tabular-nums'}}>{cr.weight}%</div>
+              </div>
+            ))}
+          </Card>
+          <Card style={{padding:0,overflow:'auto'}}>
+            <div style={{padding:'12px 20px',background:C.gray50,borderBottom:`1px solid ${C.gray200}`,fontSize:13,fontWeight:700,color:C.navy}}>
+              Scorecard · all scores out of 10
+            </div>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+              <thead>
+                <tr style={{background:C.navy}}>
+                  <th style={{padding:'11px 14px',textAlign:'left',color:'rgba(255,255,255,.7)',fontWeight:600}}>Criterion</th>
+                  <th style={{padding:'11px 10px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:600,width:70}}>Weight</th>
+                  {CONTRACTORS_BIDDING.map(c=>(
+                    <th key={c.id} style={{padding:'11px 10px',textAlign:'right',color:C.sky,fontWeight:700,width:110}}>{c.shortName}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {TECH_CRITERIA.map((cr,i)=>{
+                  const hi=Math.max(...cr.scores);
+                  return (
+                    <tr key={i} style={{background:i%2===0?C.gray50:'white'}}>
+                      <td style={{padding:'9px 14px',color:C.navy,fontWeight:500}}>{cr.name}</td>
+                      <td style={{padding:'9px 10px',textAlign:'right',color:C.gray500,fontVariantNumeric:'tabular-nums'}}>{cr.weight}%</td>
+                      {cr.scores.map((s,ci)=>(
+                        <td key={ci} style={{padding:'9px 10px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:s===hi?700:400,color:s===hi?C.green:C.gray700,background:s===hi?'rgba(30,127,79,.08)':'transparent'}}>{s.toFixed(1)}</td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                <tr style={{background:C.navy}}>
+                  <td style={{padding:'12px 14px',color:'rgba(255,255,255,.7)',fontWeight:700,fontSize:13}}>WEIGHTED TOTAL</td>
+                  <td style={{padding:'12px 10px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:700,fontVariantNumeric:'tabular-nums'}}>100%</td>
+                  {TECH_TOTALS.map((t,i)=>(
+                    <td key={i} style={{fontFamily:HEAD_FONT,padding:'12px 10px',textAlign:'right',fontWeight:900,fontSize:14,fontVariantNumeric:'tabular-nums',color:t===Math.max(...TECH_TOTALS)?C.sky:'white'}}>
+                      {t.toFixed(1)}<span style={{fontSize:11,fontWeight:600,color:'rgba(255,255,255,.55)',marginLeft:6}}>{(t*10).toFixed(0)}%</span>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </Card>
+          <div style={{padding:'12px 14px',background:'rgba(30,127,79,.06)',border:'1px solid rgba(30,127,79,.25)',fontSize:12,color:C.green,fontWeight:600}}>
+            Qualifying threshold: 70%. All four tenderers qualified for commercial opening.
+          </div>
         </div>
       )}
 
@@ -1765,10 +1995,15 @@ function starText(s){
   const full = Math.round(s);
   return '★'.repeat(full) + '☆'.repeat(5-full);
 }
+function ExpiryBadge({d}) {
+  if(!d.flag) return null;
+  return <Badge color={d.flag==='expired'?'red':'gold'} style={{fontSize:9,marginLeft:8}}>{d.flag==='expired'?'EXPIRED':'EXPIRING SOON'}</Badge>;
+}
 function ContractorsPage() {
   const [filter, setFilter] = useState('all');
   const [sortKey, setSortKey] = useState('name');
   const [sortDir, setSortDir] = useState('asc');
+  const [expanded, setExpanded] = useState(null);
   const chips = [
     {id:'all',label:'All'},
     {id:'contractor',label:'Contractors'},
@@ -1835,10 +2070,14 @@ function ContractorsPage() {
             </tr>
           </thead>
           <tbody>
-            {sorted.map((c,i)=>(
-              <tr key={c.id} style={{borderBottom:i<sorted.length-1?`1px solid ${C.gray100}`:'none',background:i%2===0?'white':C.gray50}}>
+            {sorted.map((c,i)=>{
+              const pqq = PQQ_DATA[c.id];
+              const isOpen = expanded===c.id;
+              return (
+              <React.Fragment key={c.id}>
+              <tr onClick={()=>setExpanded(isOpen?null:c.id)} style={{borderBottom:i<sorted.length-1||isOpen?`1px solid ${C.gray100}`:'none',background:isOpen?'rgba(176,97,26,.04)':i%2===0?'white':C.gray50,cursor:'pointer'}}>
                 <td style={{padding:'12px 16px'}}>
-                  <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{c.name}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{c.name} <span style={{color:C.gray400,fontSize:11,marginLeft:6}}>{isOpen?'▾':'▸'}</span></div>
                   <div style={{fontSize:11,color:C.gray400,marginTop:2}}>{c.type==='consultant'?'Consultant':'Contractor'} · {c.region}</div>
                 </td>
                 <td style={{padding:'12px 16px',color:C.gray700}}>{c.trade}</td>
@@ -1855,7 +2094,41 @@ function ContractorsPage() {
                   <span style={{color:C.gray500,marginLeft:8,fontVariantNumeric:'tabular-nums'}}>{c.stars.toFixed(1)}</span>
                 </td>
               </tr>
-            ))}
+              {isOpen && pqq && (
+                <tr style={{borderBottom:i<sorted.length-1?`1px solid ${C.gray100}`:'none'}}>
+                  <td colSpan={7} style={{padding:0}}>
+                    <div style={{background:C.gray50,borderTop:`2px solid ${C.blue}`,padding:'18px 20px'}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,flexWrap:'wrap',gap:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:C.navy,letterSpacing:'.06em',textTransform:'uppercase'}}>PQQ Summary · {c.name}</div>
+                        {!c.prequalified && pqq.insurance.flag==='expired'
+                          ? <Badge color="red">Prequalification withheld: insurance expired</Badge>
+                          : !c.prequalified
+                            ? <Badge color="gold">PQQ under review</Badge>
+                            : <Badge color="green">PQQ approved</Badge>}
+                      </div>
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14}}>
+                        {[
+                          {label:'Trade Licence',val:<span>{pqq.licence} · expires {pqq.licenceExp.v}<ExpiryBadge d={pqq.licenceExp}/></span>},
+                          {label:'Insurance (expiry)',val:<span>{pqq.insurance.v}<ExpiryBadge d={pqq.insurance}/></span>},
+                          {label:'Financial Standing',val:pqq.financial},
+                          {label:'Completed Projects',val:String(pqq.projects)},
+                          {label:'HSE TRIR',val:pqq.trir},
+                          {label:'QMS',val:pqq.qms},
+                          {label:'PQQ Approved',val:pqq.approved},
+                          {label:'Next Review',val:pqq.review},
+                        ].map((f,fi)=>(
+                          <div key={fi} style={{background:'white',border:`1px solid ${C.gray200}`,padding:'10px 12px'}}>
+                            <div style={{fontSize:10,fontWeight:700,color:C.gray400,letterSpacing:'.06em',textTransform:'uppercase',marginBottom:4}}>{f.label}</div>
+                            <div style={{fontSize:12.5,fontWeight:600,color:C.navy,fontVariantNumeric:'tabular-nums'}}>{f.val}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
+            );})}
           </tbody>
         </table>
       </Card>
@@ -1899,10 +2172,122 @@ function AuditLog() {
   );
 }
 
+// ── CONTRACTOR ROUND 1 QUERY-RESPONSE SCREEN ──────────────────────────
+const R1_ROWS = [
+  {ref:'03.003',cat:'Missing item',finding:'Unpriced: Movement joints to blockwork, 420 m. Field median AED 18.50. Price the item or confirm inclusion within your rates.',defaultType:'Confirm inclusion'},
+  {ref:'05.004',cat:'Missing item',finding:'Unpriced: Porcelain skirting to corridors, 1,150 m. Field median AED 32.00. Price the item or confirm inclusion within your rates.',defaultType:'Revise rate'},
+  {ref:'02.002',cat:'Low rate',finding:'RC Columns & Shear Walls at AED 1,850/m³ vs field median 1,960 (−5.6%). Confirm full scope coverage at this rate.',defaultType:'Substantiate'},
+  {ref:'04.002',cat:'Low rate',finding:'Electrical HV/LV Works at AED 1,450,000 vs field median 1,470,000 (−1.4%). Confirm the cable specification allowed.',defaultType:'Substantiate'},
+  {ref:'06.001',cat:'Low rate',finding:'Curtain Wall & Glazing at AED 680/m² vs field median 708 (−3.9%). Confirm the DGU Low-E specification is covered.',defaultType:'Substantiate'},
+  {ref:'Q1',cat:'Qualification',finding:'Dewatering assumed not required. Withdraw the qualification, or price dewatering as a fixed inclusion.',defaultType:'Withdraw qualification'},
+];
+const R1_TYPES = ['Revise rate','Substantiate','Confirm inclusion','Withdraw qualification'];
+function Round1ResponseScreen({onBack}) {
+  const [rows, setRows] = useState(R1_ROWS.map(r=>({type:r.defaultType,rate:'',comment:''})));
+  const [agree, setAgree] = useState(false);
+  const [signName, setSignName] = useState('');
+  const [sealed, setSealed] = useState(false);
+  const upd = (i,patch)=>setRows(rs=>rs.map((r,ri)=>ri===i?{...r,...patch}:r));
+  const rowDone = (r)=>(r.type==='Revise rate'?r.rate:r.comment).trim()!=='';
+  const doneCount = rows.filter(rowDone).length;
+  return (
+    <div>
+      <TopBar title="Round 1 Response" sub="Marina Views Main Works · T-2026-001 · Meridian Contracting LLC"
+        actions={[<Btn key="b" variant="outline" onClick={onBack}>← Back to Invitation</Btn>]}/>
+      <div style={{background:C.navy,padding:'13px 18px',marginBottom:16,display:'flex',alignItems:'center',gap:14,flexWrap:'wrap'}}>
+        <span style={{fontSize:10,fontWeight:700,letterSpacing:'.14em',textTransform:'uppercase',color:'rgba(255,255,255,.85)',border:'1px solid rgba(255,255,255,.35)',padding:'3px 8px'}}>Round 1</span>
+        <span style={{fontFamily:HEAD_FONT,fontSize:14,fontWeight:700,color:'white'}}>Respond by 20 Mar 2026, 17:00 (UAE Time)</span>
+        <span style={{marginLeft:'auto',fontSize:12,fontWeight:500,color:'rgba(255,255,255,.75)'}}>Identical forms, identical deadline for every tenderer</span>
+      </div>
+      {sealed ? (
+        <Card style={{textAlign:'center',padding:'36px 24px'}}>
+          <div style={{fontSize:40,marginBottom:14}}>🔒</div>
+          <div style={{fontFamily:HEAD_FONT,fontSize:19,fontWeight:800,color:C.green,marginBottom:8}}>Round 1 Response Sealed</div>
+          <div style={{fontSize:13,color:C.gray500,marginBottom:16}}>Response sealed until 20 Mar 2026, 17:00 · Receipt RSP-1104-3C7B</div>
+          <div style={{maxWidth:520,margin:'0 auto',textAlign:'left',border:'1px solid rgba(30,127,79,.25)',background:'rgba(30,127,79,.04)',padding:'16px 18px'}}>
+            {[
+              '6 of 6 response items captured',
+              'e-Signed by '+(signName||'authorised signatory')+' · 14 Mar 2026, 10:12',
+              'Sealed at database level until the response deadline',
+              'Arithmetic check and like-for-like comparison run at unsealing',
+            ].map((line,i)=>(
+              <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0',fontSize:13,color:C.navy}}>
+                <span style={{color:C.green,fontWeight:700}}>✓</span>{line}
+              </div>
+            ))}
+            <div style={{marginTop:10,fontSize:11,color:C.gray400,lineHeight:1.5}}>No party, including the client, can read your revised prices before the deadline. Every tenderer's response unseals at the same moment.</div>
+          </div>
+        </Card>
+      ) : (
+      <div>
+        <Card style={{padding:0,overflow:'hidden',marginBottom:16}}>
+          <div style={{padding:'14px 20px',background:C.gray50,borderBottom:`1px solid ${C.gray200}`,display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
+            <span style={{fontSize:14,fontWeight:700,color:C.navy}}>Flagged items requiring a response</span>
+            <Badge color={doneCount===rows.length?'green':'gold'}>{doneCount} of {rows.length} captured</Badge>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'2.4fr 180px 1.6fr 130px',padding:'9px 20px',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+            <div>Item · Finding</div><div>Response Type</div><div>Your Response</div><div style={{textAlign:'right'}}>Status</div>
+          </div>
+          {R1_ROWS.map((item,i)=>{
+            const r = rows[i];
+            const done = rowDone(r);
+            return (
+              <div key={i} style={{display:'grid',gridTemplateColumns:'2.4fr 180px 1.6fr 130px',gap:12,alignItems:'start',padding:'14px 20px',borderBottom:i<R1_ROWS.length-1?`1px solid ${C.gray100}`:'none',background:i%2===0?'white':C.gray50}}>
+                <div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <span style={{fontFamily:'monospace',fontSize:12,color:C.gray400}}>{item.ref}</span>
+                    <Badge color={item.cat==='Missing item'?'red':item.cat==='Qualification'?'gold':'teal'} style={{fontSize:9}}>{item.cat.toUpperCase()}</Badge>
+                  </div>
+                  <div style={{fontSize:12.5,color:C.gray700,lineHeight:1.5}}>{item.finding}</div>
+                </div>
+                <select value={r.type} onChange={e=>upd(i,{type:e.target.value})}
+                  style={{padding:'8px 10px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:12.5,color:C.navy,background:'white',outline:'none',width:'100%'}}>
+                  {R1_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                </select>
+                {r.type==='Revise rate' ? (
+                  <input value={r.rate} onChange={e=>upd(i,{rate:e.target.value})} placeholder="Revised rate (AED)" inputMode="decimal"
+                    style={{padding:'8px 10px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:12.5,color:C.navy,outline:'none',width:'100%',textAlign:'right',fontVariantNumeric:'tabular-nums'}}/>
+                ) : (
+                  <textarea value={r.comment} onChange={e=>upd(i,{comment:e.target.value})} rows={2}
+                    placeholder={r.type==='Substantiate'?'Substantiation / build-up reference':r.type==='Confirm inclusion'?'Confirm where this is included in your rates':'Confirm withdrawal, or state your fixed inclusion price'}
+                    style={{padding:'8px 10px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:12.5,color:C.navy,outline:'none',width:'100%',resize:'vertical',fontFamily:'inherit'}}/>
+                )}
+                <div style={{textAlign:'right'}}>
+                  <Badge color={done?'green':'gold'}>{done?'✓ Captured':'Awaiting input'}</Badge>
+                </div>
+              </div>
+            );
+          })}
+        </Card>
+        <Card>
+          <div style={{fontSize:13,fontWeight:700,color:C.navy,marginBottom:10}}>Declaration & Sealed Submission</div>
+          <label style={{display:'flex',alignItems:'flex-start',gap:10,fontSize:12.5,color:C.gray700,lineHeight:1.6,cursor:'pointer',marginBottom:12}}>
+            <input type="checkbox" checked={agree} onChange={e=>setAgree(e.target.checked)} style={{marginTop:3}}/>
+            <span>I confirm this response is submitted on behalf of Meridian Contracting LLC by an authorised signatory; revised prices are subject to arithmetic check and like-for-like comparison.</span>
+          </label>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',alignItems:'center'}}>
+            <input value={signName} onChange={e=>setSignName(e.target.value)} placeholder="Type full name to e-sign"
+              style={{padding:'10px 12px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.navy,outline:'none',flex:1,minWidth:220}}/>
+            <Btn disabled={!agree||signName.trim()===''} onClick={()=>setSealed(true)} style={{background:C.navy}}>🔒 e-Sign & Submit Sealed Response</Btn>
+          </div>
+          <div style={{marginTop:10,fontSize:11,color:C.gray400}}>Your response is sealed on receipt and unreadable by any party until 20 Mar 2026, 17:00. Identical forms, identical deadline for every tenderer.</div>
+        </Card>
+      </div>
+      )}
+    </div>
+  );
+}
+
 // ── CONTRACTOR PORTAL ─────────────────────────────────────────────────
 function ContractorPortal({setPage}) {
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(0);
+  const [showRound1, setShowRound1] = useState(false);
+  const [fotChecked, setFotChecked] = useState(false);
+  const [fotName, setFotName] = useState('');
+  const [fotRole, setFotRole] = useState('');
+  const [fotSigned, setFotSigned] = useState(false);
+  if(showRound1) return <Round1ResponseScreen onBack={()=>setShowRound1(false)}/>;
   return (
     <div>
       <TopBar title="My Invitations" sub="Viewing as: Meridian Contracting LLC"/>
@@ -1925,7 +2310,10 @@ function ContractorPortal({setPage}) {
         </div>
         {!submitted ? (
           <div style={{marginTop:16}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.navy,marginBottom:10}}>Submission Checklist</div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,flexWrap:'wrap',gap:8}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.navy}}>Submission Checklist</div>
+              <Btn variant="outline" style={{fontSize:11,padding:'5px 12px'}} onClick={downloadPricingBOQ}>⬇ BOQ Pricing Copy (Excel)</Btn>
+            </div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {[
                 {label:'Priced BOQ (Excel)',required:true,icon:'📊'},
@@ -1944,10 +2332,47 @@ function ContractorPortal({setPage}) {
                 </div>
               ))}
             </div>
+            <div style={{marginTop:16,border:`1px solid ${fotSigned?'rgba(30,127,79,.35)':C.gray200}`,background:fotSigned?'rgba(30,127,79,.04)':'white',padding:'16px 18px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10,flexWrap:'wrap',gap:8}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.navy}}>Form of Tender: Digital Declaration</div>
+                {fotSigned ? <Badge color="green">✓ e-Signed</Badge> : <Badge color="gold">Required before submission</Badge>}
+              </div>
+              {[
+                'Our offer is held open for 90 days from the submission deadline',
+                'No collusion; no contact with any other tenderer regarding this tender',
+                'Items left unpriced are deemed included within our tendered rates',
+                'All issued addenda are acknowledged and allowed for',
+                'This declaration is made by an authorised signatory',
+              ].map((b,i)=>(
+                <div key={i} style={{display:'flex',gap:8,padding:'3px 0',fontSize:12.5,color:C.gray700,lineHeight:1.5}}>
+                  <span style={{color:C.blue,fontWeight:700,flexShrink:0}}>●</span><span>{b}</span>
+                </div>
+              ))}
+              {!fotSigned ? (
+                <div style={{marginTop:12}}>
+                  <label style={{display:'flex',alignItems:'flex-start',gap:8,fontSize:12.5,color:C.navy,cursor:'pointer',marginBottom:10,lineHeight:1.5}}>
+                    <input type="checkbox" checked={fotChecked} onChange={e=>setFotChecked(e.target.checked)} style={{marginTop:2}}/>
+                    <span>I confirm the declarations above on behalf of Meridian Contracting LLC</span>
+                  </label>
+                  <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                    <input value={fotName} onChange={e=>setFotName(e.target.value)} placeholder="Full name"
+                      style={{padding:'9px 12px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.navy,outline:'none',flex:1,minWidth:160}}/>
+                    <input value={fotRole} onChange={e=>setFotRole(e.target.value)} placeholder="Role / position"
+                      style={{padding:'9px 12px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.navy,outline:'none',flex:1,minWidth:160}}/>
+                    <Btn disabled={!fotChecked||fotName.trim()===''||fotRole.trim()===''} onClick={()=>setFotSigned(true)} style={{fontSize:12,padding:'9px 16px'}}>e-Sign Declaration</Btn>
+                  </div>
+                </div>
+              ) : (
+                <div style={{marginTop:12,fontSize:12.5,color:C.green,fontWeight:600}}>
+                  e-Signed by {fotName}, {fotRole} · 13 Mar 2026, 08:46 (UAE Time) · recorded in the audit log
+                </div>
+              )}
+            </div>
             <div style={{marginTop:16,padding:12,background:'rgba(176,97,26,.05)',borderRadius:0,border:`1px solid rgba(176,97,26,.15)`,fontSize:12,color:C.blue}}>
               🔒 Your bid will be cryptographically sealed on submission. No one can access bid values until the official opening time on 13 Mar 2026 at 09:00.
             </div>
-            <Btn onClick={()=>setSubmitted(true)} style={{marginTop:14,width:'100%',justifyContent:'center',fontSize:14,padding:12}}>Submit Sealed Bid →</Btn>
+            <Btn onClick={()=>setSubmitted(true)} disabled={!fotSigned} style={{marginTop:14,width:'100%',justifyContent:'center',fontSize:14,padding:12}}>Submit Sealed Bid →</Btn>
+            {!fotSigned && <div style={{marginTop:8,fontSize:11,color:C.gray400,textAlign:'center'}}>Submission is enabled once the Form of Tender declaration is e-signed.</div>}
           </div>
         ) : (
           <div style={{marginTop:16,textAlign:'center',padding:'20px 0'}}>
@@ -1973,6 +2398,19 @@ function ContractorPortal({setPage}) {
             <Btn onClick={downloadSubmissionPDF} variant="outline" style={{fontSize:12,padding:'8px 20px'}}>⬇ Download Bid Submission Receipt</Btn>
           </div>
         )}
+      </Card>
+      <Card style={{borderTop:`3px solid ${C.gold}`}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
+          <div>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+              <div style={{fontSize:15,fontWeight:700,color:C.navy}}>Round 1 Negotiation Pack received</div>
+              <Badge color="gold">Response open</Badge>
+            </div>
+            <div style={{fontSize:13,color:C.gray500}}>Issued 13 Mar 2026, 14:00 · 6 response items · Respond by 20 Mar 2026, 17:00 (UAE Time)</div>
+            <div style={{fontSize:12,color:C.gray400,marginTop:6}}>Identical forms, identical deadline for every tenderer. Your sealed response cannot be read by any party before the deadline.</div>
+          </div>
+          <Btn variant="navy" onClick={()=>setShowRound1(true)}>View Round 1 Response Form →</Btn>
+        </div>
       </Card>
     </div>
   );
