@@ -41,12 +41,15 @@ const HEAD_FONT = "'Space Grotesk','Inter',sans-serif";
 
 // ── DEMO DATA ────────────────────────────────────────────────────────
 const DEMO_CONTRACTORS = [
-  {id:1,name:'Meridian Contracting LLC',grade:'A',disciplines:['Main Contractor','Civil'],region:'Dubai',status:'approved',contact:'Omar Khalidi',email:'o.khalidi@meridiancontracting.ae'},
-  {id:2,name:'Crescent Gulf Engineering',grade:'A',disciplines:['Main Contractor'],region:'Dubai / Abu Dhabi',status:'approved',contact:'Priya Nair',email:'p.nair@crescentgulf.ae'},
-  {id:3,name:'Stonebridge Build Co.',grade:'B',disciplines:['MEP','Main Contractor'],region:'UAE',status:'approved',contact:'Daniel Whitfield',email:'d.whitfield@stonebridgebuild.com'},
-  {id:4,name:'Atlas Construction Group',grade:'A',disciplines:['Main Contractor','Fit-out'],region:'Dubai',status:'approved',contact:'Rania Aziz',email:'r.aziz@atlasconstruction.ae'},
-  {id:5,name:'Harbourline Contracting',grade:'B',disciplines:['Civil','Structural'],region:'Abu Dhabi',status:'approved',contact:'Ali Hassan',email:'a.hassan@harbourline.ae'},
-  {id:6,name:'Dunecrest Contracting Co.',grade:'C',disciplines:['MEP'],region:'Dubai',status:'pending',contact:'Rashed Al Mansoori',email:'r.mansoori@dunecrest.ae'},
+  {id:1,name:'Meridian Contracting LLC',grade:'A',trade:'Main Contractor',disciplines:['Main Contractor','Civil'],region:'Dubai',status:'approved',contact:'Omar Khalidi',email:'o.khalidi@meridiancontracting.ae',phone:'+971 50 214 8890',prequalified:true,stars:4.6,type:'contractor'},
+  {id:2,name:'Crescent Gulf Engineering',grade:'A',trade:'Main Contractor',disciplines:['Main Contractor'],region:'Dubai / Abu Dhabi',status:'approved',contact:'Priya Nair',email:'p.nair@crescentgulf.ae',phone:'+971 55 782 3341',prequalified:true,stars:4.3,type:'contractor'},
+  {id:3,name:'Stonebridge Build Co.',grade:'B',trade:'MEP',disciplines:['MEP','Main Contractor'],region:'UAE',status:'approved',contact:'Daniel Whitfield',email:'d.whitfield@stonebridgebuild.com',phone:'+971 52 490 1176',prequalified:true,stars:4.0,type:'contractor'},
+  {id:4,name:'Atlas Construction Group',grade:'A',trade:'Fit-out',disciplines:['Main Contractor','Fit-out'],region:'Dubai',status:'approved',contact:'Rania Aziz',email:'r.aziz@atlasconstruction.ae',phone:'+971 56 903 5528',prequalified:true,stars:4.4,type:'contractor'},
+  {id:5,name:'Harbourline Contracting',grade:'B',trade:'Facades',disciplines:['Civil','Structural'],region:'Abu Dhabi',status:'approved',contact:'Ali Hassan',email:'a.hassan@harbourline.ae',phone:'+971 50 667 2019',prequalified:true,stars:3.8,type:'contractor'},
+  {id:6,name:'Dunecrest Contracting Co.',grade:'C',trade:'MEP',disciplines:['MEP'],region:'Dubai',status:'pending',contact:'Rashed Al Mansoori',email:'r.mansoori@dunecrest.ae',phone:'+971 54 318 7742',prequalified:false,stars:3.5,type:'contractor'},
+  {id:7,name:'Meridian Design Studio',grade:'A',trade:'Architecture & Engineering',disciplines:['Architecture','Engineering'],region:'Dubai',status:'approved',contact:'Sofia Marchetti',email:'s.marchetti@meridiandesign.ae',phone:'+971 50 118 4457',prequalified:true,stars:4.8,type:'consultant'},
+  {id:8,name:'Gulf QS Partners',grade:'A',trade:'Quantity Surveying',disciplines:['Quantity Surveying'],region:'Dubai / Abu Dhabi',status:'approved',contact:'James Okafor',email:'j.okafor@gulfqs.ae',phone:'+971 55 236 9083',prequalified:true,stars:4.5,type:'consultant'},
+  {id:9,name:'Horizon Supervision Consultants',grade:'B',trade:'Site Supervision',disciplines:['Site Supervision'],region:'UAE',status:'pending',contact:'Leila Haddad',email:'l.haddad@horizonsc.ae',phone:'+971 52 874 6630',prequalified:false,stars:3.9,type:'consultant'},
 ];
 
 const BOQ_ITEMS = [
@@ -70,6 +73,20 @@ const BOQ_ITEMS = [
   {code:'10.001',desc:"Contractor's Risk & Profit",unit:'sum',qty:1,rates:[971900,1262900,1111400,1591650],budget:1200000},
 ];
 // Line items sum exactly to: 18,240,000 / 19,100,000 / 19,640,000 / 20,450,000
+
+// Bill sections: groups BOQ item codes into named bill sections for summary/drill-down views
+const SECTION_MAP = [
+  {name:'A Preliminaries',codes:['09.001']},
+  {name:'B Site Work',codes:['01.001']},
+  {name:'C Concrete Work',codes:['02.001','02.002','02.003']},
+  {name:'D Masonry & Plaster',codes:['03.001','03.002']},
+  {name:'H Doors, Windows & Facade',codes:['06.001','06.002']},
+  {name:'J Finishes',codes:['05.001','05.002','05.003']},
+  {name:'P Conveying Systems',codes:['07.001']},
+  {name:'Q/R MEP Services',codes:['04.001','04.002','04.003']},
+  {name:'External Works',codes:['08.001']},
+  {name:'OH&P',codes:['10.001']},
+];
 
 const CONTRACTORS_BIDDING = [
   {id:1,name:'Meridian Contracting LLC',shortName:'Meridian'},
@@ -854,6 +871,7 @@ function Dashboard({setPage, setActiveTender}) {
     {id:'T-2026-001',name:'Marina Views — Main Works',value:'AED 19.0M',contractors:4,status:'open',statusColor:'green',statusLabel:'Analysis Ready',deadline:'Opened 09:00 · Analysis ready 09:02'},
     {id:'T-2026-002',name:'Downtown Office Tower — MEP',value:'AED 4.8M',contractors:3,status:'active',statusColor:'blue',statusLabel:'Submissions Open',deadline:'Closes 15 Mar 2026'},
     {id:'T-2026-003',name:'Al Barsha Residences — Fit-out',value:'AED 2.1M',contractors:5,status:'draft',statusColor:'gray',statusLabel:'Draft',deadline:'Not sent yet'},
+    {id:'T-2026-004',name:'Design & Supervision Services — Harbour Point',value:'AED 3.2M',contractors:5,status:'draft',statusColor:'gray',statusLabel:'Draft',deadline:'Consultancy · Not sent yet'},
   ];
   return (
     <div>
@@ -911,7 +929,7 @@ function Dashboard({setPage, setActiveTender}) {
             <div style={{fontSize:13,color:'rgba(255,255,255,.55)'}}>4 sealed bids received · Opening committee approval pending</div>
           </div>
         </div>
-        <Btn style={{background:C.sky,color:C.navyDeep,fontWeight:700}} onClick={()=>{setActiveTender({id:'T-2026-001',name:'Marina Views — Main Works'});setPage('opening');}}>Start Opening Ceremony →</Btn>
+        <Btn style={{background:C.sky,color:C.navyDeep,fontWeight:700}} onClick={()=>{setActiveTender({id:'T-2026-001',name:'Marina Views — Main Works'});setPage('opening');}}>Proceed to Opening Committee →</Btn>
       </div>
     </div>
   );
@@ -923,6 +941,7 @@ function CreateTender({setPage}) {
   const [form, setForm] = useState({
     name:'',location:'',currency:'AED',deadline:'',openDate:'',
     packages:true,
+    tenderType:'works', route:'fast',
     contractors:[],
     requirements:{site:true,form:true,addenda:true,programme:true,method:false,insurance:true,exclusions:false}
   });
@@ -981,6 +1000,52 @@ function CreateTender({setPage}) {
                   ))}
                 </div>
               </div>
+              <div style={{gridColumn:'1 / -1',display:'flex',flexDirection:'column',gap:5}}>
+                <label style={{fontSize:11,fontWeight:700,color:C.gray700,textTransform:'uppercase',letterSpacing:'.06em'}}>Tender Type</label>
+                <div style={{display:'flex',gap:10}}>
+                  {[
+                    {id:'works',title:'Works',desc:'Construction works tendered against a priced bill of quantities'},
+                    {id:'consultancy',title:'Consultancy Services',desc:'Professional services: design, supervision, quantity surveying'},
+                  ].map(opt => (
+                    <div key={opt.id} onClick={()=>set('tenderType',opt.id)} style={{
+                      flex:1,padding:'12px 14px',borderRadius:0,cursor:'pointer',
+                      border:`1px solid ${form.tenderType===opt.id?C.blue:C.gray200}`,
+                      background:form.tenderType===opt.id?'rgba(176,97,26,.06)':'white',transition:'all .15s'
+                    }}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <div style={{width:14,height:14,borderRadius:'50%',border:`2px solid ${form.tenderType===opt.id?C.blue:C.gray300}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          {form.tenderType===opt.id&&<div style={{width:6,height:6,borderRadius:'50%',background:C.blue}}/>}
+                        </div>
+                        <span style={{fontSize:13,fontWeight:600,color:form.tenderType===opt.id?C.blue:C.navy}}>{opt.title}</span>
+                      </div>
+                      <div style={{fontSize:12,color:C.gray500,paddingLeft:22}}>{opt.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{gridColumn:'1 / -1',display:'flex',flexDirection:'column',gap:5}}>
+                <label style={{fontSize:11,fontWeight:700,color:C.gray700,textTransform:'uppercase',letterSpacing:'.06em'}}>Procurement Route</label>
+                <div style={{display:'flex',gap:10}}>
+                  {[
+                    {id:'fast',title:'Fast-track',desc:'Single envelope: commercial opened with technical'},
+                    {id:'conventional',title:'Conventional',desc:'Two envelope: technical opened and approved before commercial unsealing'},
+                  ].map(opt => (
+                    <div key={opt.id} onClick={()=>set('route',opt.id)} style={{
+                      flex:1,padding:'12px 14px',borderRadius:0,cursor:'pointer',
+                      border:`1px solid ${form.route===opt.id?C.blue:C.gray200}`,
+                      background:form.route===opt.id?'rgba(176,97,26,.06)':'white',transition:'all .15s'
+                    }}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <div style={{width:14,height:14,borderRadius:'50%',border:`2px solid ${form.route===opt.id?C.blue:C.gray300}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          {form.route===opt.id&&<div style={{width:6,height:6,borderRadius:'50%',background:C.blue}}/>}
+                        </div>
+                        <span style={{fontSize:13,fontWeight:600,color:form.route===opt.id?C.blue:C.navy}}>{opt.title}</span>
+                      </div>
+                      <div style={{fontSize:12,color:C.gray500,paddingLeft:22}}>{opt.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1010,7 +1075,7 @@ function CreateTender({setPage}) {
             <div style={{fontSize:16,fontWeight:700,color:C.navy,marginBottom:6}}>Select Contractors</div>
             <div style={{fontSize:13,color:C.gray500,marginBottom:20}}>Invite from your pre-qualified contractor database. They'll receive an invitation with sealed submission instructions.</div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
-              {DEMO_CONTRACTORS.filter(c=>c.status==='approved').map(c => {
+              {DEMO_CONTRACTORS.filter(c=>c.type==='contractor'&&c.status==='approved').map(c => {
                 const selected = form.contractors.includes(c.id);
                 return (
                   <div key={c.id} onClick={()=>setForm(f=>({...f,contractors:selected?f.contractors.filter(x=>x!==c.id):[...f.contractors,c.id]}))} style={{
@@ -1059,9 +1124,10 @@ function TenderDetail({tender, setPage}) {
         title={tender?.name || 'Marina Views — Main Works'}
         sub="T-2026-001 · Opened 09:00 · 4 bids · Analysis ready 09:02"
         actions={[
+          <Badge key="env" color="teal">Fast-track · Single envelope</Badge>,
           <Badge key="s" color="green">Analysis Ready</Badge>,
           <Btn key="dl" variant="outline" onClick={downloadTenderPDF}>⬇ Tender Document</Btn>,
-          <Btn key="o" onClick={()=>setPage('opening')}>Open Bids →</Btn>
+          <Btn key="o" onClick={()=>setPage('opening')}>Proceed to Opening Committee →</Btn>
         ]}
       />
       {/* Tabs */}
@@ -1075,6 +1141,26 @@ function TenderDetail({tender, setPage}) {
         ))}
       </div>
       {tab==='overview' && (
+        <div>
+        <Card style={{padding:'16px 20px',marginBottom:20}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.navy,letterSpacing:'.06em',textTransform:'uppercase',marginBottom:12}}>Governance Gates</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:10}}>
+            {[
+              {label:'Strategy Approved',date:'28 Feb',done:true},
+              {label:'Issue Approved',date:'28 Feb',done:true},
+              {label:'Opening Committee',date:'13 Mar',done:true},
+              {label:'Evaluation',date:'13 Mar',done:true},
+              {label:'Award Approval',date:'Pending',done:false},
+            ].map((g,i)=>(
+              <div key={i} style={{border:`1px solid ${g.done?'rgba(30,127,79,.25)':'rgba(176,124,26,.35)'}`,background:g.done?'rgba(30,127,79,.05)':'rgba(176,124,26,.07)',padding:'10px 12px'}}>
+                <div style={{fontSize:14,marginBottom:4,color:g.done?C.green:C.gold,fontWeight:700}}>{g.done?'✓':'●'}</div>
+                <div style={{fontSize:12,fontWeight:600,color:C.navy}}>{g.label}</div>
+                <div style={{fontSize:11,color:g.done?C.gray500:C.gold,marginTop:2,fontVariantNumeric:'tabular-nums'}}>{g.date}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:12,fontSize:12,color:C.gray400}}>Each gate is an e-approval recorded in the audit log.</div>
+        </Card>
         <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:20}}>
           <div style={{display:'flex',flexDirection:'column',gap:16}}>
             <Card>
@@ -1118,7 +1204,7 @@ function TenderDetail({tender, setPage}) {
               <div style={{fontSize:12,fontWeight:700,color:C.sky,letterSpacing:1,textTransform:'uppercase',marginBottom:12}}>Next Action</div>
               <div style={{fontSize:15,fontWeight:700,color:'white',marginBottom:8}}>Opening Ceremony</div>
               <div style={{fontSize:12,color:'rgba(255,255,255,.5)',marginBottom:16}}>All 4 bids sealed and ready. Opening committee approval required to proceed.</div>
-              <Btn style={{width:'100%',justifyContent:'center',background:C.sky,color:C.navyDeep,fontWeight:700}} onClick={()=>setPage('opening')}>Start Opening →</Btn>
+              <Btn style={{width:'100%',justifyContent:'center',background:C.sky,color:C.navyDeep,fontWeight:700}} onClick={()=>setPage('opening')}>Proceed to Opening Committee →</Btn>
             </Card>
             <Card>
               <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:12}}>Requirements Checklist</div>
@@ -1130,6 +1216,7 @@ function TenderDetail({tender, setPage}) {
               ))}
             </Card>
           </div>
+        </div>
         </div>
       )}
       {tab==='contractors' && (
@@ -1157,28 +1244,41 @@ function TenderDetail({tender, setPage}) {
       )}
       {tab==='documents' && (
         <Card>
-          <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Tender Documents Issued</div>
-          <div style={{display:'grid',gridTemplateColumns:'2.4fr 110px 90px 130px 120px',padding:'8px 0',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
-            <div>Document</div><div>Type</div><div style={{textAlign:'right'}}>Size</div><div style={{textAlign:'right'}}>Issued</div><div style={{textAlign:'right'}}>Action</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.navy,marginBottom:16}}>Tender Document Register</div>
+          <div style={{display:'grid',gridTemplateColumns:'2.2fr 90px 80px 80px 110px 140px 120px',padding:'8px 0',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+            <div>Document</div><div>Volume</div><div>Type</div><div style={{textAlign:'right'}}>Size</div><div style={{textAlign:'right'}}>Issued</div><div style={{textAlign:'center'}}>Status</div><div style={{textAlign:'right'}}>Action</div>
           </div>
           {[
-            ['Tender Document — Instructions & Conditions','PDF','1.2 MB','28 Feb 2026',true],
-            ['Bill of Quantities — Main Works','Excel','842 KB','28 Feb 2026',false],
-            ['Drawings Package — Rev C','ZIP','48 MB','28 Feb 2026',false],
-            ['Addendum 01 — Clarifications','PDF','214 KB','05 Mar 2026',false],
-          ].map(([name,type,size,issued,live],i)=>(
-            <div key={i} style={{display:'grid',gridTemplateColumns:'2.4fr 110px 90px 130px 120px',alignItems:'center',padding:'12px 0',borderBottom:i<3?`1px solid ${C.gray100}`:'none'}}>
-              <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{name}</div>
-              <div style={{fontSize:12,color:C.gray500}}>{type}</div>
-              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{size}</div>
-              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{issued}</div>
-              <div style={{textAlign:'right'}}>{live
+            {name:'ITT Letter',vol:'—',type:'PDF',size:'1.2 MB',issued:'28 Feb 2026',ret:false,live:true},
+            {name:'Instructions to Tenderers',vol:'Vol 1',type:'PDF',size:'3.4 MB',issued:'28 Feb 2026',ret:false,live:false},
+            {name:'Form of Tender',vol:'Vol 1',type:'PDF',size:'320 KB',issued:'28 Feb 2026',ret:true,live:false},
+            {name:'General Conditions of Contract',vol:'Vol 1',type:'PDF',size:'2.1 MB',issued:'28 Feb 2026',ret:false,live:false},
+            {name:'Particular Conditions',vol:'Vol 1',type:'PDF',size:'1.6 MB',issued:'28 Feb 2026',ret:false,live:false},
+            {name:'Schedules to Conditions',vol:'Vol 1',type:'PDF',size:'890 KB',issued:'28 Feb 2026',ret:true,live:false},
+            {name:'General & Particular Specifications',vol:'Vol 2',type:'PDF',size:'18 MB',issued:'28 Feb 2026',ret:false,live:false},
+            {name:'Bill of Quantities: locked pricing copy',vol:'Vol 3',type:'Excel',size:'842 KB',issued:'28 Feb 2026',ret:true,live:false},
+            {name:'Drawings Package Rev C',vol:'Vol 4',type:'ZIP',size:'48 MB',issued:'28 Feb 2026',ret:false,live:false},
+            {name:'Addendum 01: Clarifications',vol:'—',type:'PDF',size:'214 KB',issued:'05 Mar 2026',ret:false,live:false},
+            {name:'Confidentiality Agreement',vol:'—',type:'PDF',size:'180 KB',issued:'28 Feb 2026',ret:true,retLabel:'Signed at invitation',live:false},
+          ].map((d,i,arr)=>(
+            <div key={i} style={{display:'grid',gridTemplateColumns:'2.2fr 90px 80px 80px 110px 140px 120px',alignItems:'center',padding:'11px 0',borderBottom:i<arr.length-1?`1px solid ${C.gray100}`:'none'}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{d.name}</div>
+              <div style={{fontSize:12,color:C.gray500}}>{d.vol}</div>
+              <div style={{fontSize:12,color:C.gray500}}>{d.type}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{d.size}</div>
+              <div style={{fontSize:12,color:C.gray500,textAlign:'right',fontVariantNumeric:'tabular-nums'}}>{d.issued}</div>
+              <div style={{textAlign:'center'}}>
+                {d.ret
+                  ? <Badge color="gold" style={{fontSize:10}}>{d.retLabel||'RETURNABLE'}</Badge>
+                  : <Badge color="green" style={{fontSize:10}}>Issued</Badge>}
+              </div>
+              <div style={{textAlign:'right'}}>{d.live
                 ? <Btn variant="outline" style={{fontSize:11,padding:'5px 10px'}} onClick={downloadTenderPDF}>⬇ Download</Btn>
                 : <Btn variant="outline" style={{fontSize:11,padding:'5px 10px',opacity:.55,cursor:'default'}}>⬇ Download</Btn>}
               </div>
             </div>
           ))}
-          <div style={{marginTop:14,fontSize:12,color:C.gray400}}>Every download by every contractor is recorded in the audit log with user, timestamp, and document version.</div>
+          <div style={{marginTop:14,fontSize:12,color:C.gray400}}>Every issue and download is logged in the audit trail with user, timestamp, and document version. Returnables come back as structured digital submissions, not scans.</div>
         </Card>
       )}
       {tab==='submissions' && (
@@ -1210,7 +1310,11 @@ function OpeningCeremony({setPage}) {
   const [step, setStep] = useState(0);
   // 0=pre-open, 1=approving, 2=opening, 3=opened
   const [approved, setApproved] = useState([]);
-  const approvers = ['Graham Stevens (Client Admin)','Rania Al Hajji (QS Lead)'];
+  const [passcodes, setPasscodes] = useState(['','']);
+  const approvers = [
+    {name:'Graham Stevens',role:'Client Admin',at:'09:00:03'},
+    {name:'Rania Al Hajji',role:'QS Lead',at:'09:00:07'},
+  ];
   const [progress, setProgress] = useState(0);
 
   function handleOpen() {
@@ -1245,35 +1349,55 @@ function OpeningCeremony({setPage}) {
                   </div>
                 ))}
               </div>
-              <Btn onClick={()=>setStep(1)} style={{fontSize:15,padding:'12px 32px'}}>Proceed to Approval →</Btn>
+              <Btn onClick={()=>setStep(1)} style={{fontSize:15,padding:'12px 32px'}}>Proceed to Opening Committee →</Btn>
             </div>
           </Card>
         )}
         {step===1 && (
           <Card>
-            <div style={{fontSize:17,fontWeight:700,color:C.navy,marginBottom:6}}>Committee Approval Required</div>
-            <div style={{fontSize:13,color:C.gray500,marginBottom:20}}>Both committee members must approve before bids are unsealed.</div>
-            {approvers.map((a,i) => (
-              <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px',borderRadius:0,border:`1px solid ${approved.includes(i)?C.green:C.gray200}`,background:approved.includes(i)?'rgba(30,127,79,.05)':'white',marginBottom:10,transition:'all .2s'}}>
-                <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{width:36,height:36,borderRadius:50,background:approved.includes(i)?'rgba(30,127,79,.1)':C.gray100,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>
-                    {approved.includes(i)?'✅':'👤'}
-                  </div>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{a}</div>
-                    <div style={{fontSize:11,color:C.gray400}}>{approved.includes(i)?'✓ Approved':'Pending approval'}</div>
+            <div style={{fontSize:17,fontWeight:700,color:C.navy,marginBottom:6}}>Opening Committee</div>
+            <div style={{fontSize:13,color:C.gray500,marginBottom:16}}>Each member authenticates independently. Bids remain sealed until the quorum is met.</div>
+            <div style={{background:C.navy,padding:'12px 16px',marginBottom:16,fontSize:12,color:'rgba(255,255,255,.85)',lineHeight:1.6}}>
+              <strong style={{color:'white'}}>Time lock:</strong> unsealing is enabled from 13 Mar 2026, 09:00 and executes only when the quorum approves. Enforced at database level; no administrator override.
+            </div>
+            {approvers.map((a,i) => {
+              const done = approved.includes(i);
+              return (
+                <div key={i} style={{padding:'14px',borderRadius:0,border:`1px solid ${done?C.green:C.gray200}`,background:done?'rgba(30,127,79,.05)':'white',marginBottom:10,transition:'all .2s'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <div style={{width:36,height:36,borderRadius:50,background:done?'rgba(30,127,79,.1)':C.gray100,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16}}>
+                        {done?'✅':'👤'}
+                      </div>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{a.name}</div>
+                        <div style={{fontSize:11,color:C.gray400}}>{a.role}</div>
+                      </div>
+                    </div>
+                    {done
+                      ? <Badge color="green">✓ Approved at {a.at} · MFA verified</Badge>
+                      : (
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <input
+                            type="password"
+                            placeholder="Passcode"
+                            value={passcodes[i]}
+                            onChange={e=>setPasscodes(p=>p.map((v,pi)=>pi===i?e.target.value:v))}
+                            style={{padding:'8px 10px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,width:130,outline:'none'}}
+                          />
+                          <Btn variant="teal" disabled={passcodes[i].length<4} onClick={()=>setApproved(p=>[...p,i])} style={{fontSize:12,padding:'8px 14px'}}>Authenticate & Approve</Btn>
+                        </div>
+                      )}
                   </div>
                 </div>
-                {!approved.includes(i) && <Btn onClick={()=>setApproved(p=>[...p,i])} variant="teal" style={{fontSize:12,padding:'7px 14px'}}>Approve</Btn>}
-                {approved.includes(i) && <Badge color="green">Approved ✓</Badge>}
+              );
+            })}
+            <div style={{marginTop:16,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:12}}>
+              <div style={{fontSize:13,fontWeight:700,color:approved.length===2?C.green:C.gray700}}>
+                Approvals: {approved.length} of 2 required
               </div>
-            ))}
-            {approved.length===2 && (
-              <div style={{marginTop:16,textAlign:'center'}}>
-                <div style={{fontSize:13,color:C.green,fontWeight:600,marginBottom:12}}>✓ Both approvals received. Ready to open.</div>
-                <Btn onClick={handleOpen} style={{background:C.navy,fontSize:15,padding:'12px 32px'}}>🔓 Open All Bids</Btn>
-              </div>
-            )}
+              <Btn onClick={handleOpen} disabled={approved.length<2} style={{background:C.navy,fontSize:15,padding:'12px 32px'}}>🔓 Unseal All Bids</Btn>
+            </div>
           </Card>
         )}
         {step===2 && (
@@ -1317,17 +1441,27 @@ function OpeningCeremony({setPage}) {
 function AnalysisView({setPage}) {
   const [activeTab, setActiveTab] = useState('matrix');
   const [selectedContractor, setSelectedContractor] = useState(0);
+  const [matrixView, setMatrixView] = useState('summary');
+  const [detailSection, setDetailSection] = useState(0);
   const spread = ((TOTALS[3]-TOTALS[0])/TOTALS[0]*100).toFixed(1);
   const vsbudget = ((TOTALS[0]-BUDGET)/BUDGET*100).toFixed(1);
 
-  function cellColor(val, rowIdx) {
+  function cellColor(val, rates) {
     if(!val) return {bg:'rgba(179,54,43,.08)',color:'#B3362B'};
-    const rowRates = BOQ_ITEMS[rowIdx].rates.filter(r=>r>0);
+    const rowRates = rates.filter(r=>r>0);
     const min = Math.min(...rowRates), max = Math.max(...rowRates);
     if(val===min) return {bg:'rgba(30,127,79,.1)',color:'#1E7F4F'};
     if(val===max) return {bg:'rgba(179,54,43,.1)',color:'#B3362B'};
     return {bg:'transparent',color:C.gray700};
   }
+
+  // Section totals: per contractor, sum of qty x rate for member items (0 = unpriced item in section)
+  const sectionRows = SECTION_MAP.map(sec=>{
+    const items = BOQ_ITEMS.filter(it=>sec.codes.includes(it.code));
+    const totals = [0,1,2,3].map(ci=>items.reduce((sum,it)=>sum + (it.rates[ci]>0 ? it.qty*it.rates[ci] : 0),0));
+    const complete = [0,1,2,3].map(ci=>items.every(it=>it.rates[ci]>0));
+    return {name:sec.name,items,totals,complete};
+  });
 
   const negSchedule = BOQ_ITEMS.map(item => {
     const rate = item.rates[selectedContractor];
@@ -1344,6 +1478,7 @@ function AnalysisView({setPage}) {
         title="Commercial Analysis"
         sub="Marina Views — Main Works · Opened 13 Mar 2026, 09:00"
         actions={[
+          <Badge key="env" color="teal">Fast-track · Single envelope</Badge>,
           <Btn key="e" variant="outline">⬇ Export Excel</Btn>,
           <Btn key="a" variant="outline" onClick={downloadAnalysisPDF}>⬇ Analysis Report</Btn>,
           <Btn key="p" onClick={downloadAwardRecommendationPDF}>⬇ Recommendation for Award</Btn>
@@ -1383,54 +1518,117 @@ function AnalysisView({setPage}) {
       </div>
 
       {activeTab==='matrix' && (
-        <Card style={{padding:0,overflow:'auto'}}>
-          <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
-            <thead>
-              <tr style={{background:C.navy}}>
-                <th style={{padding:'11px 14px',textAlign:'left',color:'rgba(255,255,255,.7)',fontWeight:600,width:40}}>Code</th>
-                <th style={{padding:'11px 14px',textAlign:'left',color:'rgba(255,255,255,.7)',fontWeight:600}}>Description</th>
-                <th style={{padding:'11px 8px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:600,width:50}}>Unit</th>
-                <th style={{padding:'11px 8px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:600,width:65}}>Qty</th>
-                {CONTRACTORS_BIDDING.map(c=>(
-                  <th key={c.id} style={{padding:'11px 10px',textAlign:'right',color:C.sky,fontWeight:700,width:110}}>{c.shortName}</th>
-                ))}
-                <th style={{padding:'11px 10px',textAlign:'right',color:C.gold,fontWeight:600,width:80}}>Spread</th>
-              </tr>
-            </thead>
-            <tbody>
-              {BOQ_ITEMS.map((item,i)=>{
-                const validRates = item.rates.filter(r=>r>0);
-                const lo = Math.min(...validRates), hi = Math.max(...validRates);
-                const sp = ((hi-lo)/lo*100).toFixed(0);
-                return (
-                  <tr key={i} style={{background:i%2===0?C.gray50:'white'}}>
-                    <td style={{padding:'9px 14px',color:C.gray400,fontFamily:'monospace'}}>{item.code}</td>
-                    <td style={{padding:'9px 14px',color:C.navy,fontWeight:500}}>{item.desc}</td>
-                    <td style={{padding:'9px 8px',textAlign:'right',color:C.gray500}}>{item.unit}</td>
-                    <td style={{padding:'9px 8px',textAlign:'right',color:C.gray700}}>{item.qty.toLocaleString()}</td>
-                    {item.rates.map((r,ri)=>{
-                      const cc = cellColor(r,i);
-                      return <td key={ri} style={{padding:'9px 10px',textAlign:'right',fontWeight:r===lo||r===hi?700:400,...cc}}>
-                        {r===0?<span style={{color:C.red,fontWeight:700}}>MISSING</span>:Number(r).toLocaleString()}
-                      </td>;
-                    })}
-                    <td style={{padding:'9px 10px',textAlign:'right',fontWeight:700,color:parseInt(sp)>15?C.red:parseInt(sp)>8?C.gold:C.green}}>{sp}%</td>
-                  </tr>
-                );
-              })}
-              {/* Totals row */}
-              <tr style={{background:C.navy}}>
-                <td colSpan={4} style={{padding:'12px 14px',color:'rgba(255,255,255,.7)',fontWeight:700,fontSize:13}}>TOTAL BID VALUE</td>
-                {TOTALS.map((t,i)=>(
-                  <td key={i} style={{fontFamily:HEAD_FONT,padding:'12px 10px',textAlign:'right',fontWeight:900,fontSize:14,color:i===0?C.sky:i===3?'#E4967F':'white'}}>
-                    AED {Number(t).toLocaleString()}
-                  </td>
-                ))}
-                <td style={{padding:'12px 10px',textAlign:'right',fontWeight:700,color:C.gold}}>{spread}%</td>
-              </tr>
-            </tbody>
-          </table>
-        </Card>
+        <div>
+          <div style={{display:'flex',gap:8,marginBottom:14,alignItems:'center',flexWrap:'wrap'}}>
+            {[['summary','Bill Summary'],['detail','Section Detail']].map(([id,label])=>(
+              <div key={id} onClick={()=>setMatrixView(id)} style={{
+                padding:'7px 14px',borderRadius:0,cursor:'pointer',fontSize:13,fontWeight:500,
+                border:`1px solid ${matrixView===id?C.blue:C.gray200}`,
+                background:matrixView===id?'rgba(176,97,26,.07)':'white',
+                color:matrixView===id?C.blue:C.gray700
+              }}>{label}</div>
+            ))}
+            {matrixView==='detail' && (
+              <select value={detailSection} onChange={e=>setDetailSection(Number(e.target.value))}
+                style={{marginLeft:8,padding:'7px 10px',border:`1px solid ${C.gray200}`,borderRadius:0,fontSize:13,color:C.navy,background:'white',outline:'none'}}>
+                {SECTION_MAP.map((s,i)=>(<option key={i} value={i}>{s.name}</option>))}
+              </select>
+            )}
+          </div>
+          {matrixView==='summary' && (
+          <Card style={{padding:0,overflow:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+              <thead>
+                <tr style={{background:C.navy}}>
+                  <th style={{padding:'11px 14px',textAlign:'left',color:'rgba(255,255,255,.7)',fontWeight:600}}>Bill Section</th>
+                  <th style={{padding:'11px 8px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:600,width:55}}>Items</th>
+                  {CONTRACTORS_BIDDING.map(c=>(
+                    <th key={c.id} style={{padding:'11px 10px',textAlign:'right',color:C.sky,fontWeight:700,width:120}}>{c.shortName}</th>
+                  ))}
+                  <th style={{padding:'11px 10px',textAlign:'right',color:C.gold,fontWeight:600,width:80}}>Spread</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sectionRows.map((sec,i)=>{
+                  const valid = sec.totals.filter((t,ci)=>sec.complete[ci]&&t>0);
+                  const lo = Math.min(...valid), hi = Math.max(...valid);
+                  const sp = ((hi-lo)/lo*100).toFixed(0);
+                  return (
+                    <tr key={i} style={{background:i%2===0?C.gray50:'white'}}>
+                      <td style={{padding:'9px 14px',color:C.navy,fontWeight:600}}>{sec.name}</td>
+                      <td style={{padding:'9px 8px',textAlign:'right',color:C.gray500,fontVariantNumeric:'tabular-nums'}}>{sec.items.length}</td>
+                      {sec.totals.map((t,ci)=>{
+                        const incomplete = !sec.complete[ci];
+                        const cc = incomplete ? {bg:'rgba(179,54,43,.08)',color:'#B3362B'}
+                          : t===lo ? {bg:'rgba(30,127,79,.1)',color:'#1E7F4F'}
+                          : t===hi ? {bg:'rgba(179,54,43,.1)',color:'#B3362B'}
+                          : {bg:'transparent',color:C.gray700};
+                        return <td key={ci} style={{padding:'9px 10px',textAlign:'right',fontVariantNumeric:'tabular-nums',fontWeight:(!incomplete&&(t===lo||t===hi))?700:400,background:cc.bg,color:cc.color}}>
+                          {incomplete?<span style={{color:C.red,fontWeight:700}}>MISSING</span>:Number(t).toLocaleString()}
+                        </td>;
+                      })}
+                      <td style={{padding:'9px 10px',textAlign:'right',fontWeight:700,color:parseInt(sp)>15?C.red:parseInt(sp)>8?C.gold:C.green}}>{sp}%</td>
+                    </tr>
+                  );
+                })}
+                {/* Grand total row: equals the exact bid totals */}
+                <tr style={{background:C.navy}}>
+                  <td colSpan={2} style={{padding:'12px 14px',color:'rgba(255,255,255,.7)',fontWeight:700,fontSize:13}}>TOTAL BID VALUE</td>
+                  {TOTALS.map((t,i)=>(
+                    <td key={i} style={{fontFamily:HEAD_FONT,padding:'12px 10px',textAlign:'right',fontWeight:900,fontSize:14,color:i===0?C.sky:i===3?'#E4967F':'white'}}>
+                      AED {Number(t).toLocaleString()}
+                    </td>
+                  ))}
+                  <td style={{padding:'12px 10px',textAlign:'right',fontWeight:700,color:C.gold}}>{spread}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </Card>
+          )}
+          {matrixView==='detail' && (
+          <Card style={{padding:0,overflow:'auto'}}>
+            <div style={{padding:'12px 20px',background:C.gray50,borderBottom:`1px solid ${C.gray200}`,fontSize:13,fontWeight:700,color:C.navy}}>
+              {SECTION_MAP[detailSection].name} · line item rates
+            </div>
+            <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+              <thead>
+                <tr style={{background:C.navy}}>
+                  <th style={{padding:'11px 14px',textAlign:'left',color:'rgba(255,255,255,.7)',fontWeight:600,width:40}}>Code</th>
+                  <th style={{padding:'11px 14px',textAlign:'left',color:'rgba(255,255,255,.7)',fontWeight:600}}>Description</th>
+                  <th style={{padding:'11px 8px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:600,width:50}}>Unit</th>
+                  <th style={{padding:'11px 8px',textAlign:'right',color:'rgba(255,255,255,.7)',fontWeight:600,width:65}}>Qty</th>
+                  {CONTRACTORS_BIDDING.map(c=>(
+                    <th key={c.id} style={{padding:'11px 10px',textAlign:'right',color:C.sky,fontWeight:700,width:110}}>{c.shortName}</th>
+                  ))}
+                  <th style={{padding:'11px 10px',textAlign:'right',color:C.gold,fontWeight:600,width:80}}>Spread</th>
+                </tr>
+              </thead>
+              <tbody>
+                {BOQ_ITEMS.filter(it=>SECTION_MAP[detailSection].codes.includes(it.code)).map((item,i)=>{
+                  const validRates = item.rates.filter(r=>r>0);
+                  const lo = Math.min(...validRates), hi = Math.max(...validRates);
+                  const sp = ((hi-lo)/lo*100).toFixed(0);
+                  return (
+                    <tr key={item.code} style={{background:i%2===0?C.gray50:'white'}}>
+                      <td style={{padding:'9px 14px',color:C.gray400,fontFamily:'monospace'}}>{item.code}</td>
+                      <td style={{padding:'9px 14px',color:C.navy,fontWeight:500}}>{item.desc}</td>
+                      <td style={{padding:'9px 8px',textAlign:'right',color:C.gray500}}>{item.unit}</td>
+                      <td style={{padding:'9px 8px',textAlign:'right',color:C.gray700}}>{item.qty.toLocaleString()}</td>
+                      {item.rates.map((r,ri)=>{
+                        const cc = cellColor(r,item.rates);
+                        return <td key={ri} style={{padding:'9px 10px',textAlign:'right',fontWeight:r===lo||r===hi?700:400,background:cc.bg,color:cc.color}}>
+                          {r===0?<span style={{color:C.red,fontWeight:700}}>MISSING</span>:Number(r).toLocaleString()}
+                        </td>;
+                      })}
+                      <td style={{padding:'9px 10px',textAlign:'right',fontWeight:700,color:parseInt(sp)>15?C.red:parseInt(sp)>8?C.gold:C.green}}>{sp}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </Card>
+          )}
+        </div>
       )}
 
       {activeTab==='negotiation' && (
@@ -1531,21 +1729,27 @@ function AnalysisView({setPage}) {
             <div style={{fontSize:13,color:'rgba(255,255,255,.85)',lineHeight:1.65,marginBottom:10}}>
               Every tenderer receives the same standard pack and the same response window. That is the point: everyone gets a fair chance. Each pack covers the arithmetic check, missing items, high and low rate outliers, provisional sum changes, preliminaries as a percentage of tender, OH&P mark-up, and qualifications to withdraw.
             </div>
-            <div style={{fontSize:12,fontWeight:600,color:C.sky}}>Responses due: 20 March 2026, 17:00 UAE time · Sealed resubmission via the platform</div>
+            <div style={{fontSize:12,fontWeight:600,color:C.sky,marginBottom:10}}>Responses due: 20 March 2026, 17:00 UAE time · Sealed resubmission via the platform</div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,.7)',lineHeight:1.6}}>
+              Tenderers respond in the portal item by item (revise, substantiate, confirm or withdraw), e-sign a declaration, and their response is sealed until the response deadline. Re-comparison runs the moment responses unseal.
+            </div>
           </Card>
           <Card style={{padding:0,overflow:'hidden'}}>
-            <div style={{display:'grid',gridTemplateColumns:'2fr 120px 110px 110px 160px',padding:'12px 20px',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
-              <div>Tenderer</div><div style={{textAlign:'right'}}>Items Flagged</div><div style={{textAlign:'right'}}>Prelims %</div><div style={{textAlign:'right'}}>OH&P %</div><div style={{textAlign:'right'}}>Pack</div>
+            <div style={{display:'grid',gridTemplateColumns:'2fr 110px 90px 90px 160px 150px',padding:'12px 20px',borderBottom:`1px solid ${C.gray200}`,fontSize:11,fontWeight:700,letterSpacing:.6,textTransform:'uppercase',color:C.gray400}}>
+              <div>Tenderer</div><div style={{textAlign:'right'}}>Items Flagged</div><div style={{textAlign:'right'}}>Prelims %</div><div style={{textAlign:'right'}}>OH&P %</div><div style={{textAlign:'right'}}>Response</div><div style={{textAlign:'right'}}>Pack</div>
             </div>
-            {CONTRACTORS_BIDDING.map((c,i)=>(
-              <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 120px 110px 110px 160px',alignItems:'center',padding:'13px 20px',borderBottom:i<3?`1px solid ${C.gray100}`:'none'}}>
+            {CONTRACTORS_BIDDING.map((c,i)=>{
+              const responded = i<2;
+              return (
+              <div key={i} style={{display:'grid',gridTemplateColumns:'2fr 110px 90px 90px 160px 150px',alignItems:'center',padding:'13px 20px',borderBottom:i<3?`1px solid ${C.gray100}`:'none'}}>
                 <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{c.name}</div>
                 <div style={{textAlign:'right',fontSize:13,fontWeight:700,color:NEG_DATA[i].flags>=8?C.red:C.navy,fontVariantNumeric:'tabular-nums'}}>{NEG_DATA[i].flags}</div>
                 <div style={{textAlign:'right',fontSize:13,color:NEG_DATA[i].prelims>10.5?C.gold:C.gray700,fontVariantNumeric:'tabular-nums'}}>{NEG_DATA[i].prelims.toFixed(1)}%</div>
                 <div style={{textAlign:'right',fontSize:13,color:C.gray700,fontVariantNumeric:'tabular-nums'}}>{NEG_DATA[i].ohp.toFixed(1)}%</div>
+                <div style={{textAlign:'right'}}><Badge color={responded?'green':'gold'}>{responded?'Received · Sealed':'Awaiting'}</Badge></div>
                 <div style={{textAlign:'right'}}><Btn variant="outline" style={{fontSize:11,padding:'6px 12px'}} onClick={()=>downloadNegotiationPack(i)}>⬇ Download Pack</Btn></div>
               </div>
-            ))}
+            );})}
           </Card>
           <div style={{padding:'12px 14px',background:C.gray50,border:`1px solid ${C.gray200}`,fontSize:12,color:C.gray500}}>
             Pack issue and every download are recorded in the audit log. Identical structure, identical deadline, and sealed responses are what make the final Recommendation for Award defensible.
@@ -1557,41 +1761,103 @@ function AnalysisView({setPage}) {
 }
 
 // ── CONTRACTORS PAGE ──────────────────────────────────────────────────
+function starText(s){
+  const full = Math.round(s);
+  return '★'.repeat(full) + '☆'.repeat(5-full);
+}
 function ContractorsPage() {
   const [filter, setFilter] = useState('all');
-  const filtered = filter==='all'?DEMO_CONTRACTORS:DEMO_CONTRACTORS.filter(c=>c.status===filter);
+  const [sortKey, setSortKey] = useState('name');
+  const [sortDir, setSortDir] = useState('asc');
+  const chips = [
+    {id:'all',label:'All'},
+    {id:'contractor',label:'Contractors'},
+    {id:'consultant',label:'Consultants'},
+    {id:'approved',label:'Approved'},
+    {id:'pending',label:'Pending'},
+  ];
+  const filtered = DEMO_CONTRACTORS.filter(c=>{
+    if(filter==='all') return true;
+    if(filter==='contractor'||filter==='consultant') return c.type===filter;
+    return c.status===filter;
+  });
+  const cols = [
+    {key:'name',label:'Name',align:'left'},
+    {key:'trade',label:'Trade',align:'left'},
+    {key:'contact',label:'Contact Person',align:'left'},
+    {key:'phone',label:'Contact Number',align:'left'},
+    {key:'prequalified',label:'Prequalified',align:'center'},
+    {key:'grade',label:'Grade',align:'center'},
+    {key:'stars',label:'Rating',align:'right'},
+  ];
+  const sorted = [...filtered].sort((a,b)=>{
+    let av=a[sortKey], bv=b[sortKey];
+    if(sortKey==='prequalified'){av=a.prequalified?1:0;bv=b.prequalified?1:0;}
+    let r;
+    if(typeof av==='number') r = av-bv;
+    else r = String(av).localeCompare(String(bv));
+    return sortDir==='asc'?r:-r;
+  });
+  const handleSort = (key)=>{
+    if(sortKey===key) setSortDir(d=>d==='asc'?'desc':'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+  };
+  const nContractors = DEMO_CONTRACTORS.filter(c=>c.type==='contractor').length;
+  const nConsultants = DEMO_CONTRACTORS.filter(c=>c.type==='consultant').length;
+  const nApproved = DEMO_CONTRACTORS.filter(c=>c.status==='approved').length;
+  const nPending = DEMO_CONTRACTORS.filter(c=>c.status==='pending').length;
   return (
     <div>
-      <TopBar title="Contractor Database" sub={`${DEMO_CONTRACTORS.filter(c=>c.status==='approved').length} approved · ${DEMO_CONTRACTORS.filter(c=>c.status==='pending').length} pending review`}
+      <TopBar title="Contractor Database" sub={`${nContractors} contractors · ${nConsultants} consultants · ${nApproved} approved · ${nPending} pending review`}
         actions={[<Btn key="add">+ Add Contractor</Btn>]}/>
       <div style={{display:'flex',gap:8,marginBottom:20}}>
-        {['all','approved','pending'].map(f=>(
-          <div key={f} onClick={()=>setFilter(f)} style={{
+        {chips.map(f=>(
+          <div key={f.id} onClick={()=>setFilter(f.id)} style={{
             padding:'7px 14px',borderRadius:0,cursor:'pointer',fontSize:13,fontWeight:500,
-            border:`1px solid ${filter===f?C.blue:C.gray200}`,
-            background:filter===f?'rgba(176,97,26,.07)':'white',
-            color:filter===f?C.blue:C.gray700,textTransform:'capitalize'
-          }}>{f==='all'?'All Contractors':f==='approved'?'Approved':'Pending Review'}</div>
+            border:`1px solid ${filter===f.id?C.blue:C.gray200}`,
+            background:filter===f.id?'rgba(176,97,26,.07)':'white',
+            color:filter===f.id?C.blue:C.gray700
+          }}>{f.label}</div>
         ))}
       </div>
-      <Card style={{padding:0,overflow:'hidden'}}>
-        {filtered.map((c,i)=>(
-          <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 20px',borderBottom:i<filtered.length-1?`1px solid ${C.gray100}`:'none'}}>
-            <div style={{display:'flex',alignItems:'center',gap:12}}>
-              <div style={{width:40,height:40,borderRadius:0,background:C.gray100,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🔧</div>
-              <div>
-                <div style={{fontSize:14,fontWeight:600,color:C.navy}}>{c.name}</div>
-                <div style={{fontSize:12,color:C.gray400,marginTop:2}}>{c.contact} · {c.email}</div>
-                <div style={{fontSize:11,color:C.gray400,marginTop:2}}>{c.disciplines.join(' · ')} · {c.region}</div>
-              </div>
-            </div>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <Badge color={c.grade==='A'?'blue':c.grade==='B'?'teal':'gray'}>Grade {c.grade}</Badge>
-              <Badge color={c.status==='approved'?'green':'gold'}>{c.status==='approved'?'✓ Approved':'Pending'}</Badge>
-              {c.status==='pending'&&<Btn variant="teal" style={{fontSize:11,padding:'5px 12px'}}>Review</Btn>}
-            </div>
-          </div>
-        ))}
+      <Card style={{padding:0,overflow:'auto'}}>
+        <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+          <thead>
+            <tr style={{background:C.gray50,borderBottom:`1px solid ${C.gray200}`}}>
+              {cols.map(col=>(
+                <th key={col.key} onClick={()=>handleSort(col.key)} style={{
+                  padding:'10px 16px',textAlign:col.align,fontSize:11,fontWeight:700,color:sortKey===col.key?C.blue:C.gray500,
+                  letterSpacing:'.05em',textTransform:'uppercase',cursor:'pointer',userSelect:'none',whiteSpace:'nowrap'
+                }}>
+                  {col.label}{sortKey===col.key ? (sortDir==='asc'?' ▲':' ▼') : ''}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((c,i)=>(
+              <tr key={c.id} style={{borderBottom:i<sorted.length-1?`1px solid ${C.gray100}`:'none',background:i%2===0?'white':C.gray50}}>
+                <td style={{padding:'12px 16px'}}>
+                  <div style={{fontSize:13,fontWeight:600,color:C.navy}}>{c.name}</div>
+                  <div style={{fontSize:11,color:C.gray400,marginTop:2}}>{c.type==='consultant'?'Consultant':'Contractor'} · {c.region}</div>
+                </td>
+                <td style={{padding:'12px 16px',color:C.gray700}}>{c.trade}</td>
+                <td style={{padding:'12px 16px',color:C.gray700}}>{c.contact}</td>
+                <td style={{padding:'12px 16px',color:C.gray500,fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap'}}>{c.phone}</td>
+                <td style={{padding:'12px 16px',textAlign:'center'}}>
+                  <Badge color={c.prequalified?'green':'gold'}>{c.prequalified?'Yes':'No'}</Badge>
+                </td>
+                <td style={{padding:'12px 16px',textAlign:'center'}}>
+                  <Badge color={c.grade==='A'?'blue':c.grade==='B'?'teal':'gray'}>{c.grade}</Badge>
+                </td>
+                <td style={{padding:'12px 16px',textAlign:'right',whiteSpace:'nowrap'}}>
+                  <span style={{color:C.gold,letterSpacing:1}}>{starText(c.stars)}</span>
+                  <span style={{color:C.gray500,marginLeft:8,fontVariantNumeric:'tabular-nums'}}>{c.stars.toFixed(1)}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </Card>
     </div>
   );
@@ -1689,6 +1955,21 @@ function ContractorPortal({setPage}) {
             <div style={{fontSize:16,fontWeight:700,color:C.green,marginBottom:6}}>Bid Successfully Sealed</div>
             <div style={{fontSize:13,color:C.gray500,marginBottom:12}}>Receipt: <strong>TB-2026-001-4</strong> · Submitted: 08:47, 13 Mar 2026</div>
             <div style={{fontSize:12,color:C.gray400,marginBottom:16}}>Your bid is sealed until the official opening on 13 Mar 2026 at 09:00.<br/>You will be notified when results are available.</div>
+            <div style={{textAlign:'left',maxWidth:520,margin:'0 auto 16px',border:`1px solid rgba(30,127,79,.25)`,background:'rgba(30,127,79,.04)',padding:'16px 18px'}}>
+              <div style={{fontSize:12,fontWeight:700,color:C.green,letterSpacing:'.06em',textTransform:'uppercase',marginBottom:10}}>Instant submission receipt</div>
+              {[
+                'Template checksum verified',
+                'Structure unmodified',
+                'Arithmetic check: passed (0 casting errors)',
+                'Unpriced items: 0 of 1,032',
+                'Receipt RCT-2841-7F2A issued, bid sealed',
+              ].map((line,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 0',fontSize:13,color:C.navy}}>
+                  <span style={{color:C.green,fontWeight:700}}>✓</span>{line}
+                </div>
+              ))}
+              <div style={{marginTop:10,fontSize:11,color:C.gray400,lineHeight:1.5}}>Validation is automated and visible only to the tenderer; the bid remains sealed from every other party.</div>
+            </div>
             <Btn onClick={downloadSubmissionPDF} variant="outline" style={{fontSize:12,padding:'8px 20px'}}>⬇ Download Bid Submission Receipt</Btn>
           </div>
         )}
